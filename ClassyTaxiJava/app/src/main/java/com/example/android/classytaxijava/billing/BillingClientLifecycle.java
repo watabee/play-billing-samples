@@ -20,7 +20,6 @@ import android.app.Activity;
 import android.app.Application;
 import android.util.Log;
 
-import androidx.annotation.Nullable;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.MutableLiveData;
@@ -121,7 +120,8 @@ public class BillingClientLifecycle implements LifecycleObserver, PurchasesUpdat
         Log.d(TAG, "onBillingSetupFinished: " + responseCode + " " + debugMessage);
         if (responseCode == BillingClient.BillingResponseCode.OK) {
             // The billing client is ready. You can query purchases here.
-            querySkuDetails();
+            querySubSkuDetails();
+            queryInAppSkuDetails();
             queryPurchases();
         }
     }
@@ -133,7 +133,7 @@ public class BillingClientLifecycle implements LifecycleObserver, PurchasesUpdat
     }
 
     /**
-     * Receives the result from {@link #querySkuDetails()}}.
+     * Receives the result from {@link #querySubSkuDetails()}}.
      * <p>
      * Store the SkuDetails and post them in the {@link #skusWithSkuDetails}. This allows other
      * parts of the app to use the {@link SkuDetails} to show SKU information and make purchases.
@@ -303,7 +303,7 @@ public class BillingClientLifecycle implements LifecycleObserver, PurchasesUpdat
      * In order to make purchases, you need the {@link SkuDetails} for the item or subscription.
      * This is an asynchronous call that will receive a result in {@link #onSkuDetailsResponse}.
      */
-    public void querySkuDetails() {
+    private void querySubSkuDetails() {
         Log.d(TAG, "querySkuDetails");
 
         List<String> skus = new ArrayList<>();
@@ -315,7 +315,27 @@ public class BillingClientLifecycle implements LifecycleObserver, PurchasesUpdat
                 .setSkusList(skus)
                 .build();
 
-        Log.i(TAG, "querySkuDetailsAsync");
+        Log.i(TAG, "querySubsSkuDetailsAsync");
+        billingClient.querySkuDetailsAsync(params, this);
+    }
+
+    /**
+     * In order to make purchases, you need the {@link SkuDetails} for the item or subscription.
+     * This is an asynchronous call that will receive a result in {@link #onSkuDetailsResponse}.
+     */
+    private void queryInAppSkuDetails() {
+        Log.d(TAG, "querySkuDetails");
+
+        List<String> skus = new ArrayList<>();
+        skus.add(Constants.CONSUMABLE_SKU);
+        skus.add(Constants.NONCONSUMABLE_SKU);
+
+        SkuDetailsParams params = SkuDetailsParams.newBuilder()
+                .setType(BillingClient.SkuType.INAPP)
+                .setSkusList(skus)
+                .build();
+
+        Log.i(TAG, "queryInAppSkuDetailsAsync");
         billingClient.querySkuDetailsAsync(params, this);
     }
 
