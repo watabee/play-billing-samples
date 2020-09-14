@@ -614,7 +614,7 @@ class BillingRepository private constructor(private val application: Application
                   disbursement.
                  */
                 val testing = localCacheBillingClient.purchaseDao().getPurchases()
-                Log.d(LOG_TAG, "processPurchases purchases in the lcl db ${testing?.size}")
+                Log.d(LOG_TAG, "processPurchases purchases in the lcl db ${testing.size}")
                 localCacheBillingClient.purchaseDao().insert(*validPurchases.toTypedArray())
                 handleConsumablePurchasesAsync(consumables)
                 acknowledgeNonConsumablePurchasesAsync(nonConsumables)

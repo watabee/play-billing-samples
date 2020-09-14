@@ -75,7 +75,7 @@ open class SkuDetailsAdapter : RecyclerView.Adapter<SkuDetailsAdapter.SkuDetails
 
         fun bind(item: AugmentedSkuDetails?) {
             item?.apply {
-                itemView?.apply {
+                itemView.apply {
                     val name = title?.substring(0, title.indexOf("("))
                     sku_title.text = name
                     sku_description.text = description
@@ -90,17 +90,17 @@ open class SkuDetailsAdapter : RecyclerView.Adapter<SkuDetailsAdapter.SkuDetails
 
         private fun onDisabled(enabled: Boolean, res: Resources) {
             if (enabled) {
-                itemView?.apply {
-                    setBackgroundColor(res.getColor(R.color.colorAccentLight))
-                    sku_title.setTextColor(res.getColor(R.color.textColor))
-                    sku_description.setTextColor(res.getColor(R.color.textColor))
-                    sku_price.setTextColor(res.getColor(R.color.textColor))
+                itemView.apply {
+                    setBackgroundColor(res.getColor(R.color.colorAccentLight, context.theme))
+                    sku_title.setTextColor(res.getColor(R.color.textColor, context.theme))
+                    sku_description.setTextColor(res.getColor(R.color.textColor, context.theme))
+                    sku_price.setTextColor(res.getColor(R.color.textColor, context.theme))
                     sku_image.setColorFilter(null)
                 }
             } else {
-                itemView?.apply {
-                    setBackgroundColor(res.getColor(R.color.textDisabledHint))
-                    val color = res.getColor(R.color.imgDisableHint)
+                itemView.apply {
+                    setBackgroundColor(res.getColor(R.color.textDisabledHint, context.theme))
+                    val color = res.getColor(R.color.imgDisableHint, context.theme)
                     sku_image.setColorFilter(color)
                     sku_title.setTextColor(color)
                     sku_description.setTextColor(color)
@@ -125,7 +125,7 @@ open class SkuDetailsAdapter : RecyclerView.Adapter<SkuDetailsAdapter.SkuDetails
          * the same icon, when{} is used to set imgName
          */
         private fun getSkuDrawableId(sku: String, view: View): Int {
-            var imgName: String = when {
+            val imgName: String = when {
                 sku.startsWith("gold_") -> "gold_subs_icon"
                 else -> sku
             }

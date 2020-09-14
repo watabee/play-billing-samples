@@ -20,15 +20,14 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 30
     defaultConfig {
         applicationId APP_ID
-        minSdkVersion 14
-        targetSdkVersion 28
+        minSdkVersion 23
+        targetSdkVersion 30
         versionCode 5
         versionName "0.05"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        javaCompileOptions.annotationProcessorOptions.includeCompileClasspath = true
 
     }
     signingConfigs {
