@@ -255,7 +255,7 @@ public class BillingViewModel extends AndroidViewModel {
             // Only set the old SKU parameter if the old SKU is already owned.
             if (oldSkuToBeReplaced != null && !oldSkuToBeReplaced.equals(sku)) {
                 Purchase oldPurchase = BillingUtilities
-                        .getPurchaseForSku(purchases.getValue(), sku);
+                        .getPurchaseForSku(purchases.getValue(), oldSkuToBeReplaced);
                 billingBuilder.setOldSku(oldSkuToBeReplaced, oldPurchase.getPurchaseToken());
             }
 
