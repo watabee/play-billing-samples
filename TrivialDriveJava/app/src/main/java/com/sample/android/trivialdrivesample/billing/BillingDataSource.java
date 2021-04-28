@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -81,6 +82,8 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
     private static final String TAG = "TrivialDrive:" + BillingDataSource.class.getSimpleName();
     private static final long RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L;
     private static final long RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L;  // 15 minutes
+    private static final long SKU_DETAILS_REQUERY_TIME = 1000L * 60L * 60L * 4L;          // 4 hours
+
     private static volatile BillingDataSource sInstance;
     private static final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -94,6 +97,9 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
 
     // how long before the data source tries to reconnect to Google play
     private long reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS;
+
+    // when was the last successful SkuDetailsResponse?
+    private long skuDetailsResponseTime = -SKU_DETAILS_REQUERY_TIME;
 
     private enum SkuState {
         SKU_STATE_UNPURCHASED,
@@ -195,7 +201,17 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
     private void addSkuLiveData(List<String> skuList) {
         for (String sku: skuList) {
             MutableLiveData<SkuState> skuState = new MutableLiveData<>();
-            MutableLiveData<SkuDetails> details = new MutableLiveData<>();
+            MutableLiveData<SkuDetails> details = new MutableLiveData<SkuDetails>() {
+                @Override
+                protected void onActive() {
+                    if ( SystemClock.elapsedRealtime()-skuDetailsResponseTime > SKU_DETAILS_REQUERY_TIME ) {
+                        skuDetailsResponseTime = SystemClock.elapsedRealtime();
+                        Log.v(TAG, "Skus not fresh, requerying");
+                        querySkuDetailsAsync();
+                    }
+
+                }
+            };
             skuStateMap.put(sku, skuState);
             skuDetailsLiveDataMap.put(sku, details);
         }
@@ -353,6 +369,11 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
             case BillingClient.BillingResponseCode.ITEM_NOT_OWNED:
             default:
                 Log.wtf(TAG, "onSkuDetailsResponse: " + responseCode + " " + debugMessage);
+        }
+        if ( responseCode == BillingClient.BillingResponseCode.OK ) {
+            skuDetailsResponseTime = SystemClock.elapsedRealtime();
+        } else {
+            skuDetailsResponseTime = -SKU_DETAILS_REQUERY_TIME;
         }
     }
 
