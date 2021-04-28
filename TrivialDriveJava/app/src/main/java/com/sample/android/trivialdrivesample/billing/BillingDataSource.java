@@ -184,7 +184,7 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
         handler.postDelayed(() ->
                 billingClient.startConnection(BillingDataSource.this ),
                 reconnectMilliseconds);
-        reconnectMilliseconds = Math.min(RECONNECT_TIMER_START_MILLISECONDS*2,
+        reconnectMilliseconds = Math.min(reconnectMilliseconds*2,
                 RECONNECT_TIMER_MAX_TIME_MILLISECONDS);
     }
 

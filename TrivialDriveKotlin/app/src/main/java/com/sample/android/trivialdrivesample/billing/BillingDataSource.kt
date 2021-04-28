@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.*
 import kotlinx.coroutines.*
@@ -49,6 +50,7 @@ import kotlin.math.min
 
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
+private const val SKU_DETAILS_REQUERY_TIME = 1000L * 60L * 60L * 4L         // 4 hours
 
 class BillingDataSource private constructor(application: Application, knownInappSKUs: Array<String>?,
                                             knownSubscriptionSKUs: Array<String>?, autoConsumeSKUs: Array<String>?)
@@ -65,6 +67,9 @@ class BillingDataSource private constructor(application: Application, knownInapp
 
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
+
+    // when was the last successful SkuDetailsResponse?
+    private var skuDetailsResponseTime = -SKU_DETAILS_REQUERY_TIME
 
     private enum class SkuState {
         SKU_STATE_UNPURCHASED, SKU_STATE_PENDING, SKU_STATE_PURCHASED, SKU_STATE_PURCHASED_AND_ACKNOWLEDGED
@@ -112,7 +117,7 @@ class BillingDataSource private constructor(application: Application, knownInapp
     private fun retryBillingServiceConnectionWithExponentialBackoff() {
         handler.postDelayed({ billingClient.startConnection(this@BillingDataSource) },
                 reconnectMilliseconds)
-        reconnectMilliseconds = min(RECONNECT_TIMER_START_MILLISECONDS * 2,
+        reconnectMilliseconds = min(reconnectMilliseconds * 2,
                 RECONNECT_TIMER_MAX_TIME_MILLISECONDS)
     }
 
@@ -124,6 +129,16 @@ class BillingDataSource private constructor(application: Application, knownInapp
         for (sku in skuList!!) {
             val skuState = MutableStateFlow(SkuState.SKU_STATE_UNPURCHASED)
             val details = MutableStateFlow<SkuDetails?>(null)
+            details.subscriptionCount.map { count -> count > 0 } // map count into active/inactive flag
+                    .distinctUntilChanged() // only react to true<->false changes
+                    .onEach { isActive -> // configure an action
+                        if ( isActive && (SystemClock.elapsedRealtime()-skuDetailsResponseTime > SKU_DETAILS_REQUERY_TIME ) ) {
+                            skuDetailsResponseTime = SystemClock.elapsedRealtime()
+                            Log.v(TAG, "Skus not fresh, requerying")
+                            querySkuDetailsAsync()
+                        }
+                    }
+                    .launchIn(CoroutineScope(Dispatchers.Main)) // launch it
             skuStateMap[sku] = skuState
             skuDetailsMap[sku] = details
         }
@@ -243,6 +258,11 @@ class BillingDataSource private constructor(application: Application, knownInapp
             BillingClient.BillingResponseCode.ITEM_NOT_OWNED ->
                 Log.wtf(TAG, "onSkuDetailsResponse: $responseCode $debugMessage")
             else -> Log.wtf(TAG, "onSkuDetailsResponse: $responseCode $debugMessage")
+        }
+        if ( responseCode == BillingClient.BillingResponseCode.OK ) {
+            skuDetailsResponseTime = SystemClock.elapsedRealtime()
+        } else {
+            skuDetailsResponseTime = -SKU_DETAILS_REQUERY_TIME
         }
     }
 
