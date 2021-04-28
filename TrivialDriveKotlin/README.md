@@ -34,71 +34,60 @@ Screenshots
 Getting Started
 ---------------
 
-This sample can't be run as-is. You have to create your own
-application instance in the Developer Console and modify this
-sample to point to it. Here is what you must do:
+This sample won't build without you supplying a base64EncodedPublicKey in your local.properties,
+which is used for purchase signature validation. If you just want to run the sample, you can put 
+anything in there to get past the Gradle build check, but in order to get the rest of the sample
+to function, you need to create an application instance in the Google Play Developer Console and
+add matching in-app-purchase SKUs.
 
 ON THE GOOGLE PLAY DEVELOPER CONSOLE
 
 1. Create an application on the Developer Console, available at
    https://play.google.com/apps/publish/.
 
-2. Copy the application's public key (a base-64 string). You can find this in
-   the "Services & APIs" section under "Licensing & In-App Billing".
+2. Copy the application's public key (a base-64 string). You can currently find this under
+   Monetization Setup->Licensing.
 
 IN THE CODE
 
-3. Open MainActivity.java, find the declaration of base64EncodedPublicKey and
-   replace the placeholder value with the public key you retrieved in Step 2.
+3. Create or open local.properties.  Add base64EncodedPublicKey=the key value you copied"
 
 4. Change the sample's package name to your package name. To do that, update the
    package name in AndroidManifest.xml and correct the references (especially the
    references to the R object).
 
-5. Export an APK, signing it with your PRODUCTION (not debug) developer certificate.
+5. Export an APK, signing it with your PRODUCTION (not debug) developer certificate. This cert is
+   only used for securely communicating with Google Play App Signing, and will not be used for 
+   publishing by Google Play.
 
 BACK TO THE GOOGLE PLAY DEVELOPER CONSOLE
 
-6. Upload your APK to Google Play for Alpha Testing.
+6. Upload your APK to Google Play for Internal Testing. Any other track will require that your app
+   has complete assets and metadata for publishing.  Add testers here.
 
-7. Make sure to add your test account (the one you will use to test purchases)
-   to the "testers" section of your app. Your test account CANNOT BE THE SAME AS
-   THE PUBLISHER ACCOUNT. If it is, your purchases won't go through.
+7. Go into the main developer console settings and go to License Testing.  Add accounts here that
+   will be used for testing. These accounts will get to make test purchases _and_ can used builds
+   signed with a different signature.
 
-8. Under In-app Products, create MANAGED in-app items with these IDs:
+8. Under In-app Products, create products with these Product IDs:
        premium, gas
-   Set their prices to 1 dollar. You can choose a different price if you like.
 
-9. Under In-app Products, create SUBSCRIPTION items with these IDs:
+9. Under Subscriptions, create SUBSCRIPTION items with these IDs:
        infinite_gas_monthly, infinite_gas_yearly
-   Set their prices to 1 dollar and the billing recurrence to monthly for
-   infinite_gas_monthly and yearly for infinite_gas_yearly. To prevent being charged
-   while testing, set the trial period to 7 days.
 
-10. Publish your APK to the Alpha channel. Wait 2-3 hours for Google Play to process the APK
-   If you don't wait for Google Play to process the APK, you might see errors where Google Play
-   says that "this version of the application is not enabled for in-app billing" or something
-   similar. Ensure that the In-App products move to the "Active" state within the console before
-   testing.
-
+10. Publish your APK to the internal testing channel. It should be ready to test almost immediately.
+ 
 TEST THE CODE
 
-11. Install the APK signed with your PRODUCTION certificate, to a
-test device [*].
+11. Install the APK signed with your debug certificate, to a test device with a test account on it.
 12. Run the app.
-13. Make purchases using the test account you added in Step 7.
+13. Make (test) purchases!
 
-Remember to refund any real purchases you make, if you don't want the
-charges to actually to through. Remember, you can use the tester functionality within
+If you make any real purchases, you can refund them. You can use the tester functionality within
 the Google Play console to define test Google Accounts that won't be charged.
-When using the tester functionality make sure to look for "Test" language appended
-to each receipt. If you don't see "Test" then you will need to be sure to refund/cancel
-the charge.
-
-[*]: it will be easier to use a test device that doesn't have your
-developer account logged in; this is because, if you attempt to purchase
-an in-app item using the same account that you used to publish the app,
-the purchase will not go through.
+When using the tester functionality make sure to look for "Test" language appended to each 
+purchase in the device UI and in the receipt. If you don't see "Test" then you will need to be 
+sure to refund/cancel the charge.
 
 A NOTE ABOUT SECURITY
 ---------------------
@@ -108,7 +97,7 @@ how to enforce a tight security model. When releasing a production application
 to the general public, we highly recommend that you implement the security best
 practices described in our documentation at:
 
-http://developer.android.com/google/play/billing/billing_best_practices.html
+https://developer.android.com/google/play/billing/security
 
 In particular, you should set developer payload strings when making purchase
 requests and you should verify them when reading back the results. This will make
@@ -124,7 +113,7 @@ submitting a pull request through GitHub.
 
 License
 -------
-Copyright 2012 Google, Inc.
+Copyright 2021 Google, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one or more contributor
 license agreements.  See the NOTICE file distributed with this work for
@@ -148,4 +137,4 @@ CHANGELOG
    2013-01-08: Updated to include support for subscriptions
    2015-03-13: Updated to new dev console and added yearly subscriptions
    2015-08-27: Ported to gradle and prepped for transitioning to GitHub
-   2021-04-01: Ported to In-App-Billing Library V3
+   2021-04-28: Rewritten and updated to support In-App-Billing Library V3
