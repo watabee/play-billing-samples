@@ -1,11 +1,11 @@
 /*
- * Copyright 2012 Google Inc. All Rights Reserved.
+ * Copyright (C) 2021 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,8 +35,9 @@ import androidx.navigation.ui.NavigationUI;
 import com.google.android.material.snackbar.Snackbar;
 import com.sample.android.trivialdrivesample.databinding.ActivityMainBinding;
 
-/**
- * MainActivity here exists as a container for the
+/*
+ * MainActivity here exists as a container for the fragments that display the various bits of UI,
+ * as well as the CoordinatorLayout/SnackBar implementation.
  */
 public class MainActivity extends AppCompatActivity{
     private MainActivityViewModel mainActivityViewModel;
