@@ -17,7 +17,6 @@
 package com.sample.android.trivialdrivesample
 
 import android.app.Activity
-import android.app.Application
 import android.util.Log
 import androidx.lifecycle.LifecycleObserver
 import com.sample.android.trivialdrivesample.billing.BillingDataSource
@@ -32,10 +31,10 @@ import kotlinx.coroutines.launch
  * a unified version of the state of the game to the ViewModel. It works closely with the
  * BillingDataSource to implement consumable items, premium items, etc.
  */
-class TrivialDriveRepository(private val application: Application) {
-    val billingDataSource: BillingDataSource
-    val gameStateModel: GameStateModel
-    val gameMessages: MutableSharedFlow<String>
+class TrivialDriveRepository(private val billingDataSource: BillingDataSource,
+                             private val gameStateModel: GameStateModel,
+                             val defaultScope: CoroutineScope) {
+    val gameMessages: MutableSharedFlow<Int>
 
     /**
      * Sets up the event that we can use to send messages up to the UI to be used in Snackbars.
@@ -43,16 +42,14 @@ class TrivialDriveRepository(private val application: Application) {
      * strings into useful String messages, and emitting the messages into the game messages flow.
      */
     fun postMessagesFromBillingFlow() {
-        Log.d(TAG, "postMessagesFromBillingFlow")
-        CoroutineScope(Dispatchers.Main).launch {
-            Log.d(TAG, "Collection Coroutine Scope Entered")
+        defaultScope.launch {
             try {
                 billingDataSource.getNewPurchases().collect() { sku ->
                     Log.d(TAG, "Triggered with " + sku)
                     when (sku) {
-                        SKU_GAS -> gameMessages.emit(application.getString(R.string.message_more_gas_acquired))
-                        SKU_PREMIUM -> gameMessages.emit(application.getString(R.string.message_premium))
-                        SKU_INFINITE_GAS_MONTHLY -> gameMessages.emit(application.getString(R.string.message_subscribed))
+                        SKU_GAS -> gameMessages.emit(R.string.message_more_gas_acquired)
+                        SKU_PREMIUM -> gameMessages.emit(R.string.message_premium)
+                        SKU_INFINITE_GAS_MONTHLY -> gameMessages.emit(R.string.message_subscribed)
                     }
                 }
             } catch (e: Throwable) {
@@ -65,20 +62,18 @@ class TrivialDriveRepository(private val application: Application) {
     /**
      * Uses one unit of gas if we don't have a subscription.
      */
-    fun drive() {
-        CoroutineScope(Dispatchers.Main).launch {
-            val gasTankLevel = gasTankLevel().first()
-            when (gasTankLevel) {
-                GAS_TANK_INFINITE -> sendMessage(application.getString(R.string.message_infinite_drive))
-                GAS_TANK_MIN -> sendMessage(application.getString(R.string.message_out_of_gas))
-                else -> {
-                    val newGasLevel = gasTankLevel - gameStateModel.decrementGas(GAS_TANK_MIN)
-                    Log.d(TAG, "Old Gas Level: " + gasTankLevel + " New Gas Level: " + newGasLevel)
-                    if ( newGasLevel == GAS_TANK_MIN ) {
-                        sendMessage(application.getString(R.string.message_out_of_gas))
-                    } else {
-                        sendMessage(application.getString(R.string.message_you_drove))
-                    }
+    suspend fun drive() {
+        val gasTankLevel = gasTankLevel().first()
+        when (gasTankLevel) {
+            GAS_TANK_INFINITE -> sendMessage(R.string.message_infinite_drive)
+            GAS_TANK_MIN -> sendMessage(R.string.message_out_of_gas)
+            else -> {
+                val newGasLevel = gasTankLevel - gameStateModel.decrementGas(GAS_TANK_MIN)
+                Log.d(TAG, "Old Gas Level: " + gasTankLevel + " New Gas Level: " + newGasLevel)
+                if ( newGasLevel == GAS_TANK_MIN ) {
+                    sendMessage(R.string.message_out_of_gas)
+                } else {
+                    sendMessage(R.string.message_you_drove)
                 }
             }
         }
@@ -178,13 +173,11 @@ class TrivialDriveRepository(private val application: Application) {
         return billingDataSource.getSkuDescription(sku)
     }
 
-    val messages: Flow<String>
+    val messages: Flow<Int>
         get() = gameMessages
 
-    fun sendMessage(s: String) {
-        CoroutineScope(Dispatchers.Main).launch {
-            gameMessages.emit(s)
-        }
+    suspend fun sendMessage(stringId: Int) {
+        gameMessages.emit(stringId)
     }
 
     val billingFlowInProcess: Flow<Boolean>
@@ -210,34 +203,20 @@ class TrivialDriveRepository(private val application: Application) {
         // SKU for subscription purchases (infinite gas)
         const val SKU_INFINITE_GAS_MONTHLY = "infinite_gas_monthly"
         const val SKU_INFINITE_GAS_YEARLY = "infinite_gas_yearly"
-        val TAG = "TrivialDrive:" + TrivialDriveRepository::class.java.simpleName
+        val TAG = TrivialDriveRepository::class.simpleName
         val INAPP_SKUS = arrayOf(SKU_PREMIUM, SKU_GAS)
         val SUBSCRIPTION_SKUS = arrayOf(SKU_INFINITE_GAS_MONTHLY,
                 SKU_INFINITE_GAS_YEARLY)
         val AUTO_CONSUME_SKUS = arrayOf(SKU_GAS)
-
-        @Volatile
-        private var sInstance: TrivialDriveRepository? = null
-
-        // Standard boilerplate double check locking pattern for thread-safe singletons.
-        @JvmStatic
-        fun getInstance(application: Application) =
-            sInstance ?: synchronized(this) {
-                sInstance ?: TrivialDriveRepository(application).
-                    also { sInstance = it }
-            }
     }
 
     init {
-        billingDataSource = BillingDataSource.getInstance(application, INAPP_SKUS,
-                SUBSCRIPTION_SKUS, AUTO_CONSUME_SKUS)
-        gameStateModel = GameStateModel.getInstance(application)
-        gameMessages = MutableSharedFlow<String>()
+        gameMessages = MutableSharedFlow<Int>()
         postMessagesFromBillingFlow()
 
         // Since both are tied to application lifecycle, we can launch this scope to collect
         // consumed purchases from the billing data source while the app process is alive.
-        CoroutineScope(Dispatchers.Main).launch {
+        defaultScope.launch {
             billingDataSource.getConsumedPurchases().collect {
                 if ( it == SKU_GAS ) {
                     gameStateModel.incrementGas(GAS_TANK_MAX)

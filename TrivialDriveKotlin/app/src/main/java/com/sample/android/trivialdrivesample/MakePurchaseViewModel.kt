@@ -17,18 +17,15 @@
 package com.sample.android.trivialdrivesample
 
 import android.app.Activity
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.asLiveData
-import com.sample.android.trivialdrivesample.TrivialDriveRepository.Companion.getInstance
+import androidx.lifecycle.*
+import kotlinx.coroutines.launch
 import java.util.*
+import kotlin.collections.set
 
 /*
    This is used for any business logic, as well as to echo LiveData from the BillingRepository.
 */
-class MakePurchaseViewModel(application: Application) : AndroidViewModel(application) {
-    private val tdr: TrivialDriveRepository
+class MakePurchaseViewModel(private val tdr: TrivialDriveRepository) : ViewModel() {
 
     companion object {
         val TAG = "TrivialDrive:" + MakePurchaseViewModel::class.java.simpleName
@@ -43,21 +40,10 @@ class MakePurchaseViewModel(application: Application) : AndroidViewModel(applica
     }
 
     class SkuDetails internal constructor(val sku: String, tdr: TrivialDriveRepository) {
-        @JvmField
-        val title: LiveData<String>
-        @JvmField
-        val description: LiveData<String>
-        @JvmField
-        val price: LiveData<String>
-        @JvmField
-        val iconDrawableId: Int
-
-        init {
-            title = tdr.getSkuTitle(sku).asLiveData()
-            description = tdr.getSkuDescription(sku).asLiveData()
-            price = tdr.getSkuPrice(sku).asLiveData()
-            iconDrawableId = skuToResourceIdMap[sku]!!
-        }
+        val title = tdr.getSkuTitle(sku).asLiveData()
+        val description = tdr.getSkuDescription(sku).asLiveData()
+        val price = tdr.getSkuPrice(sku).asLiveData()
+        val iconDrawableId = skuToResourceIdMap[sku]!!
     }
 
     fun getSkuDetails(sku: String): SkuDetails {
@@ -80,11 +66,19 @@ class MakePurchaseViewModel(application: Application) : AndroidViewModel(applica
     val billingFlowInProcess: LiveData<Boolean>
         get() = tdr.billingFlowInProcess.asLiveData()
 
-    fun sendMessage(message: String) {
-        tdr.sendMessage(message)
+    fun sendMessage(message: Int) {
+        viewModelScope.launch {
+            tdr.sendMessage(message)
+        }
     }
 
-    init {
-        tdr = getInstance(application)
+    class MakePurchaseViewModelFactory(private val trivialDriveRepository: TrivialDriveRepository) :
+            ViewModelProvider.Factory {
+        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(MakePurchaseViewModel::class.java)) {
+                return MakePurchaseViewModel(trivialDriveRepository) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
     }
 }

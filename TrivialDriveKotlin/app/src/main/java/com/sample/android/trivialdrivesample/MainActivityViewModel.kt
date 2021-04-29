@@ -16,21 +16,15 @@
 
 package com.sample.android.trivialdrivesample
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.asLiveData
+import androidx.lifecycle.*
 import com.sample.android.trivialdrivesample.GameViewModel
-import com.sample.android.trivialdrivesample.TrivialDriveRepository.Companion.getInstance
 
 /*
    This is used for any business logic, as well as to echo LiveData from the BillingRepository.
 */
-class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
-    private val tdr: TrivialDriveRepository
+class MainActivityViewModel(private val tdr: TrivialDriveRepository) : ViewModel() {
 
-    val messages: LiveData<String>
+    val messages: LiveData<Int>
         get() = tdr.messages.asLiveData()
 
     fun debugConsumePremium() {
@@ -44,7 +38,13 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         val TAG = "TrivialDrive:" + GameViewModel::class.simpleName
     }
 
-    init {
-        tdr = getInstance(application)
+    class MainActivityViewModelFactory(private val trivialDriveRepository: TrivialDriveRepository) :
+            ViewModelProvider.Factory {
+        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(MainActivityViewModel::class.java)) {
+                return MainActivityViewModel(trivialDriveRepository) as T
+            }
+            throw IllegalArgumentException("Unknown ViewModel class")
+        }
     }
 }

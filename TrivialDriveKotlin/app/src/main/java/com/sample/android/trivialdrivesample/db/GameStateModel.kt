@@ -18,29 +18,31 @@ package com.sample.android.trivialdrivesample.db
 
 import android.app.Application
 import androidx.room.Room
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.withContext
 
 class GameStateModel(private val application: Application) {
     private val db: GameStateDatabase
-    val gameStateDao: GameStateDao
-    val gasTankLevel: Flow<Int>
+    private val gameStateDao: GameStateDao
+    private val gasTankLevel: Flow<Int>
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO
 
     suspend fun decrementGas(minLevel: Int) : Int {
-        return CoroutineScope(Dispatchers.IO).async {
-             gameStateDao.decrement(GAS_LEVEL, minLevel)
-        }.await()
+        return withContext(defaultDispatcher) {
+                gameStateDao.decrement(GAS_LEVEL, minLevel)
+        }
     }
 
     suspend fun incrementGas(maxLevel: Int) : Int {
-        return CoroutineScope(Dispatchers.IO).async {
+        return withContext(defaultDispatcher) {
             gameStateDao.increment(GAS_LEVEL, maxLevel)
-        }.await()
+        }
     }
 
     fun gasTankLevel(): Flow<Int> {
