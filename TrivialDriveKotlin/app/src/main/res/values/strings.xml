@@ -43,5 +43,6 @@
     <string name="debug_price_not_found">N/A</string>
     <string name="debug_title_not_found">SKU: \"%1$s\" Not Found</string>
     <string name="debug_description_not_found">Make sure that you have uploaded an APK to the Google Play developer console, that the correct SKUs have been created for the APK, and the signed-in account has been enabled for testing.</string>
+
     <string name="error_unable_to_make_purchase">Unable to make purchase.</string>
 </resources>

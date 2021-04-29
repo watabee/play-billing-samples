@@ -16,11 +16,11 @@
 package com.sample.android.trivialdrivesample;
 
 import android.app.Activity;
-import android.app.Application;
 
 import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +33,7 @@ import static com.sample.android.trivialdrivesample.TrivialDriveRepository.SKU_P
 /*
     This is used for any business logic, as well as to echo LiveData from the BillingRepository.
  */
-public class MakePurchaseViewModel extends AndroidViewModel {
+public class MakePurchaseViewModel extends ViewModel {
     static final String TAG = "TrivialDrive:" + MakePurchaseViewModel.class.getSimpleName();
     private final TrivialDriveRepository tdr;
     static private Map<String, Integer> skuToResourceIdMap = new HashMap<>();
@@ -43,9 +43,9 @@ public class MakePurchaseViewModel extends AndroidViewModel {
         skuToResourceIdMap.put(SKU_INFINITE_GAS_MONTHLY, R.drawable.get_infinite_gas);
         skuToResourceIdMap.put(SKU_INFINITE_GAS_YEARLY, R.drawable.get_infinite_gas);
     }
-    public MakePurchaseViewModel(@NonNull Application application) {
-        super(application);
-        tdr = TrivialDriveRepository.getInstance(application);
+    public MakePurchaseViewModel(@NonNull TrivialDriveRepository trivialDriveRepository) {
+        super();
+        tdr = trivialDriveRepository;
     }
 
     static public class SkuDetails {
@@ -82,7 +82,24 @@ public class MakePurchaseViewModel extends AndroidViewModel {
 
     public LiveData<Boolean> getBillingFlowInProcess() { return tdr.getBillingFlowInProcess(); }
 
-    public void sendMessage(String message) {
+    public void sendMessage(int message) {
         tdr.sendMessage(message);
+    }
+
+    public static class MakePurchaseViewModelFactory implements
+            ViewModelProvider.Factory {
+        private final TrivialDriveRepository trivialDriveRepository;
+
+        public MakePurchaseViewModelFactory(TrivialDriveRepository tdr) {
+            trivialDriveRepository = tdr;
+        }
+
+        @NonNull
+        @Override
+        public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+            if (modelClass.isAssignableFrom(MakePurchaseViewModel.class))
+                return (T) new MakePurchaseViewModel(trivialDriveRepository);
+            throw new IllegalArgumentException("Unknown ViewModel class");
+        }
     }
 }

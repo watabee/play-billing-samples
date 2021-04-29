@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.sample.android.trivialdrivesample;
+package com.sample.android.trivialdrivesample.ui;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -33,6 +33,9 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.sample.android.trivialdrivesample.MainActivityViewModel;
+import com.sample.android.trivialdrivesample.R;
+import com.sample.android.trivialdrivesample.TrivialDriveApplication;
 import com.sample.android.trivialdrivesample.databinding.ActivityMainBinding;
 
 /*
@@ -58,12 +61,17 @@ public class MainActivity extends AppCompatActivity{
                 toolbar, navController, appBarConfiguration);
 
         // Create our Activity ViewModel, which exists to handle global Snackbar messages
-        mainActivityViewModel = ViewModelProvider.AndroidViewModelFactory
-                .getInstance(getApplication()).create(MainActivityViewModel.class);
-        mainActivityViewModel.getMessages().observe(this, new Observer<String>() {
+        MainActivityViewModel.MainActivityViewModelFactory mainActivityViewModelFactory = new
+                MainActivityViewModel.MainActivityViewModelFactory(
+                ((TrivialDriveApplication)getApplication()).appContainer.
+                        trivialDriveRepository);
+        mainActivityViewModel = new ViewModelProvider(this, mainActivityViewModelFactory)
+                .get(MainActivityViewModel.class);
+        mainActivityViewModel.getMessages().observe(this, new Observer<Integer>() {
             @Override
-            public void onChanged(String s) {
-                Snackbar snackbar = Snackbar.make(activityMainBinding.mainLayout,s,Snackbar.LENGTH_SHORT);
+            public void onChanged(Integer resId) {
+                Snackbar snackbar = Snackbar.make(activityMainBinding.mainLayout,getString(resId),
+                        Snackbar.LENGTH_SHORT);
                 snackbar.show();
             }
         });

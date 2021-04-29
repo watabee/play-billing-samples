@@ -16,10 +16,8 @@
 package com.sample.android.trivialdrivesample;
 
 import android.app.Activity;
-import android.app.Application;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
@@ -58,16 +56,15 @@ public class TrivialDriveRepository {
     private static volatile TrivialDriveRepository sInstance;
     final BillingDataSource billingDataSource;
     final GameStateModel gameStateModel;
-    final SingleMediatorLiveEvent<String> gameMessages;
-    final SingleMediatorLiveEvent<String> allMessages = new SingleMediatorLiveEvent<>();
-    private final Application application;
+    final SingleMediatorLiveEvent<Integer> gameMessages;
+    final SingleMediatorLiveEvent<Integer> allMessages = new SingleMediatorLiveEvent<>();
     final ExecutorService driveExecutor = Executors.newSingleThreadExecutor();
 
-    public TrivialDriveRepository(@NonNull Application application) {
-        this.application = application;
-        billingDataSource = BillingDataSource.getInstance(application, INAPP_SKUS,
-                SUBSCRIPTION_SKUS, AUTO_CONSUME_SKUS);
-        gameStateModel = GameStateModel.getInstance(application);
+    public TrivialDriveRepository(BillingDataSource billingDataSource,
+                                  GameStateModel gameStateModel) {
+        this.billingDataSource = billingDataSource;
+        this.gameStateModel = gameStateModel;
+
         gameMessages = new SingleMediatorLiveEvent<>();
         setupMessagesSingleMediatorLiveEVent();
 
@@ -77,18 +74,6 @@ public class TrivialDriveRepository {
                 gameStateModel.incrementGas(GAS_TANK_MAX);
             }
         });
-    }
-
-    /*
-        Standard boilerplate double check locking pattern for thread-safe singletons.
-     */
-    public static TrivialDriveRepository getInstance(@NonNull Application application) {
-        if (sInstance == null) {
-            synchronized (TrivialDriveRepository.class) {
-                if (sInstance == null) sInstance = new TrivialDriveRepository(application);
-            }
-        }
-        return sInstance;
     }
 
     /**
@@ -101,10 +86,10 @@ public class TrivialDriveRepository {
     void setupMessagesSingleMediatorLiveEVent() {
         final LiveData<String> billingMessages = billingDataSource.observeNewPurchases();
         allMessages.addSource(gameMessages,
-                new Observer<String>() {
+                new Observer<Integer>() {
                     @Override
-                    public void onChanged(String s) {
-                        allMessages.setValue(s);
+                    public void onChanged(Integer resId) {
+                        allMessages.setValue(resId);
                     }
                 });
         allMessages.addSource(billingMessages,
@@ -113,13 +98,13 @@ public class TrivialDriveRepository {
                     public void onChanged(String s) {
                         switch (s) {
                             case SKU_GAS:
-                                allMessages.setValue(application.getString(R.string.message_more_gas_acquired));
+                                allMessages.setValue(R.string.message_more_gas_acquired);
                                 break;
                             case SKU_PREMIUM:
-                                allMessages.setValue(application.getString(R.string.message_premium));
+                                allMessages.setValue(R.string.message_premium);
                                 break;
                             case SKU_INFINITE_GAS_MONTHLY:
-                                allMessages.setValue(application.getString(R.string.message_subscribed));
+                                allMessages.setValue(R.string.message_subscribed);
                                 break;
                         }
                     }
@@ -137,18 +122,18 @@ public class TrivialDriveRepository {
             switch (gasLevel) {
                 case TrivialDriveRepository.GAS_TANK_INFINITE:
                     // We never use gas in the tank if we have a subscription
-                    sendMessage(application.getString(R.string.message_infinite_drive));
+                    sendMessage(R.string.message_infinite_drive);
                     break;
                 case TrivialDriveRepository.GAS_TANK_MIN:
-                    sendMessage(application.getString(R.string.message_out_of_gas));
+                    sendMessage(R.string.message_out_of_gas);
                     break;
                 case TrivialDriveRepository.GAS_TANK_MIN + 1:
                     gameStateModel.decrementGas(GAS_TANK_MIN);
-                    sendMessage(application.getString(R.string.message_out_of_gas));
+                    sendMessage(R.string.message_out_of_gas);
                     break;
                 default:
                     gameStateModel.decrementGas(GAS_TANK_MIN);
-                    sendMessage(application.getString(R.string.message_you_drove));
+                    sendMessage(R.string.message_you_drove);
                     break;
             }
         });
@@ -281,13 +266,13 @@ public class TrivialDriveRepository {
         return billingDataSource.getSkuDescription(sku);
     }
 
-    public final LiveData<String> getMessages() {
+    public final LiveData<Integer> getMessages() {
         return allMessages;
 
     }
 
-    public final void sendMessage(String s) {
-        gameMessages.postValue(s);
+    public final void sendMessage(int resId) {
+        gameMessages.postValue(resId);
     }
 
     public final LiveData<Boolean> getBillingFlowInProcess() {

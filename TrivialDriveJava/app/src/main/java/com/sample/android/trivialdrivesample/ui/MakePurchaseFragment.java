@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.sample.android.trivialdrivesample.MakePurchaseViewModel;
 import com.sample.android.trivialdrivesample.R;
+import com.sample.android.trivialdrivesample.TrivialDriveApplication;
 import com.sample.android.trivialdrivesample.TrivialDriveRepository;
 import com.sample.android.trivialdrivesample.databinding.FragmentMakePurchaseBinding;
 
@@ -91,8 +92,14 @@ public class MakePurchaseFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        makePurchaseViewModel = ViewModelProvider.AndroidViewModelFactory
-                .getInstance(getActivity().getApplication()).create(MakePurchaseViewModel.class);
+
+        MakePurchaseViewModel.MakePurchaseViewModelFactory makePurchaseViewModelFactory =
+                new MakePurchaseViewModel.MakePurchaseViewModelFactory(
+                        ((TrivialDriveApplication)getActivity().getApplication())
+                                .appContainer.trivialDriveRepository);
+        makePurchaseViewModel = new ViewModelProvider( this, makePurchaseViewModelFactory).
+                get(MakePurchaseViewModel.class);
+        
         binding.setMpvm(makePurchaseViewModel);
         binding.inappInventory.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.inappInventory.setAdapter(new MakePurchaseAdapter(inventoryList, makePurchaseViewModel, this));
@@ -100,7 +107,7 @@ public class MakePurchaseFragment extends Fragment {
 
     public void makePurchase(String sku) {
         if (!makePurchaseViewModel.buySku(getActivity(), sku)) {
-            makePurchaseViewModel.sendMessage("Unable to make purchase.");
+            makePurchaseViewModel.sendMessage(R.string.error_unable_to_make_purchase);
         }
     }
 

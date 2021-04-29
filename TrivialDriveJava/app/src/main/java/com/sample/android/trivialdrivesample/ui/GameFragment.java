@@ -30,6 +30,7 @@ import androidx.navigation.Navigation;
 
 import com.sample.android.trivialdrivesample.GameViewModel;
 import com.sample.android.trivialdrivesample.R;
+import com.sample.android.trivialdrivesample.TrivialDriveApplication;
 import com.sample.android.trivialdrivesample.databinding.FragmentGameBinding;
 
 /**
@@ -64,8 +65,15 @@ public class GameFragment extends androidx.fragment.app.Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Log.v(LOG_TAG, "onViewCreated");
-        gameViewModel = ViewModelProvider.AndroidViewModelFactory
-                .getInstance(getActivity().getApplication()).create(GameViewModel.class);
+
+        GameViewModel.GameViewModelFactory gameViewModelFactory =
+                new GameViewModel.GameViewModelFactory(
+                        ((TrivialDriveApplication)getActivity().getApplication()).appContainer
+                                .trivialDriveRepository);
+
+        gameViewModel = new ViewModelProvider(this,gameViewModelFactory)
+                .get(GameViewModel.class);
+
         gasTankResourceIds = getResources().obtainTypedArray(R.array.gas_tank_images);
 
         // Set the variables up that we'll be using in data binding

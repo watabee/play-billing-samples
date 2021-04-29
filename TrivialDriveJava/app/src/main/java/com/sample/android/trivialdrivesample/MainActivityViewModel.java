@@ -15,25 +15,23 @@
  */
 package com.sample.android.trivialdrivesample;
 
-import android.app.Application;
-
 import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 /*
     This is used for any business logic, as well as to echo LiveData from the BillingRepository.
  */
-public class MainActivityViewModel extends AndroidViewModel {
+public class MainActivityViewModel extends ViewModel {
     static final String TAG = "TrivialDrive:" + GameViewModel.class.getSimpleName();
     private final TrivialDriveRepository tdr;
-    public MainActivityViewModel(@NonNull Application application) {
-        super(application);
-        tdr = TrivialDriveRepository.getInstance(application);
+    public MainActivityViewModel(TrivialDriveRepository trivialDriveRepository) {
+        tdr = trivialDriveRepository;
     }
 
-    public LiveData<String> getMessages() {
+    public LiveData<Integer> getMessages() {
         return tdr.getMessages();
     }
 
@@ -43,5 +41,23 @@ public class MainActivityViewModel extends AndroidViewModel {
 
     public LifecycleObserver getBillingLifecycleObserver() {
         return tdr.getBillingLifecycleObserver();
+    }
+
+    public static class MainActivityViewModelFactory implements
+            ViewModelProvider.Factory {
+        private final TrivialDriveRepository trivialDriveRepository;
+
+        public MainActivityViewModelFactory(TrivialDriveRepository tdr) {
+            trivialDriveRepository = tdr;
+        }
+
+        @NonNull
+        @Override
+        public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+            if (modelClass.isAssignableFrom(MainActivityViewModel.class)) {
+                return (T)new MainActivityViewModel(trivialDriveRepository);
+            }
+            throw new IllegalArgumentException("Unknown ViewModel class");
+        }
     }
 }
