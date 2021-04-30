@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
 
-class GameStateModel(private val application: Application) {
+class GameStateModel(application: Application) {
     private val db: GameStateDatabase
     private val gameStateDao: GameStateDao
     private val gasTankLevel: Flow<Int>
@@ -51,17 +51,6 @@ class GameStateModel(private val application: Application) {
 
     companion object {
         private const val GAS_LEVEL = "gas"
-
-        @Volatile
-        private var sInstance: GameStateModel? = null
-
-        // Standard boilerplate double check locking pattern for thread-safe singletons.
-        @JvmStatic
-        fun getInstance(application: Application) =
-                sInstance ?: synchronized( this ) {
-                    sInstance ?: GameStateModel(application).
-                    also { sInstance = it }
-                }
     }
 
     init {

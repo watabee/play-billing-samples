@@ -95,11 +95,11 @@ public class MakePurchaseFragment extends Fragment {
 
         MakePurchaseViewModel.MakePurchaseViewModelFactory makePurchaseViewModelFactory =
                 new MakePurchaseViewModel.MakePurchaseViewModelFactory(
-                        ((TrivialDriveApplication)getActivity().getApplication())
+                        ((TrivialDriveApplication) getActivity().getApplication())
                                 .appContainer.trivialDriveRepository);
-        makePurchaseViewModel = new ViewModelProvider( this, makePurchaseViewModelFactory).
+        makePurchaseViewModel = new ViewModelProvider(this, makePurchaseViewModelFactory).
                 get(MakePurchaseViewModel.class);
-        
+
         binding.setMpvm(makePurchaseViewModel);
         binding.inappInventory.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.inappInventory.setAdapter(new MakePurchaseAdapter(inventoryList, makePurchaseViewModel, this));

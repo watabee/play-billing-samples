@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Basic implementation of RecyclerView adapter with header and content views.
  */
-public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapter.ViewHolder> {
+class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapter.ViewHolder> {
     static public final int VIEW_TYPE_HEADER = 0;
     static public final int VIEW_TYPE_ITEM = 1;
     private final List<Item> inventoryList;
@@ -68,7 +68,7 @@ public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapte
                 view = inventoryItemBinding.getRoot();
                 break;
         }
-        return new ViewHolder(view,viewType,inventoryHeaderBinding,inventoryItemBinding);
+        return new ViewHolder(view, inventoryHeaderBinding,inventoryItemBinding);
     }
 
     @Override
@@ -84,13 +84,13 @@ public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapte
 
     @Override
     public int getItemViewType(int position) {
-        return inventoryList.get(position).viewType;
+        return inventoryList.get(position).getViewType();
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         final InventoryHeaderBinding inventoryHeaderBinding;
         final InventoryItemBinding inventoryItemBinding;
-        public ViewHolder(View v, int viewType, InventoryHeaderBinding inventoryHeaderBinding,
+        public ViewHolder(View v, InventoryHeaderBinding inventoryHeaderBinding,
                           InventoryItemBinding inventoryItemBinding
                 ) {
             super(v);

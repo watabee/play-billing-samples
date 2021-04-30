@@ -25,18 +25,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class GameStateModel {
-    private final Application application;
-    private final GameStateDatabase db;
     final GameStateDao gameStateDao;
     final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
     final static private String GAS_LEVEL = "gas";
     final LiveData<Integer> gasTankLevel;
 
     public GameStateModel(@NonNull Application application) {
-        this.application = application;
         // This creates our DB and populates our game state database with the initial state of
         // a full tank
-        db = Room.databaseBuilder(application,
+        GameStateDatabase db = Room.databaseBuilder(application,
                 GameStateDatabase.class, "GameState.db")
                 .createFromAsset("database/initialgamestate.db")
                 .build();
@@ -44,19 +41,15 @@ public class GameStateModel {
         gasTankLevel = gameStateDao.observe(GAS_LEVEL);
     }
 
-    public void decrementGas( int minLevel ) {
-        queryExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                gameStateDao.decrement(GAS_LEVEL, minLevel);
-            }
+    public void decrementGas(int minLevel) {
+        queryExecutor.submit(() -> {
+            gameStateDao.decrement(GAS_LEVEL, minLevel);
         });
     }
 
-    public void incrementGas( int maxLevel ) {
-        queryExecutor.submit(new Runnable() {
-            @Override
-            public void run() { gameStateDao.increment(GAS_LEVEL, maxLevel); }
+    public void incrementGas(int maxLevel) {
+        queryExecutor.submit(() -> {
+            gameStateDao.increment(GAS_LEVEL, maxLevel);
         });
     }
 
@@ -64,18 +57,7 @@ public class GameStateModel {
         return gasTankLevel;
     }
 
-    public Integer getCurrentGasTankLevel() { return gameStateDao.get(GAS_LEVEL); }
-
-    private static volatile GameStateModel sInstance;
-    /*
-        Standard boilerplate double check locking pattern for thread-safe singletons.
-     */
-    public static GameStateModel getInstance(Application application) {
-        if (sInstance == null) {
-            synchronized (GameStateModel.class) {
-                if (sInstance == null) sInstance = new GameStateModel(application);
-            }
-        }
-        return sInstance;
+    public Integer getCurrentGasTankLevel() {
+        return gameStateDao.get(GAS_LEVEL);
     }
 }

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.sample.android.trivialdrivesample.billing; /**
- * This class is an sample of how you can check to make sure your purchases on the device came
- * from Google Play. Putting code like this on your server will provide additional protection.
+package com.sample.android.trivialdrivesample.billing;
+/*
+ * This class is an sample of how you can check to make sure your purchases on the device came from
+ * Google Play. Putting code like this on your server will provide additional protection.
  * <p>
- * One thing that you may also wish to consider doing is caching purchase IDs to make replay
- * attacks harder. The reason this code isn't just part of the library is to allow
- * you to customize it (and rename it!) to make generic patching exploits more difficult.
+ * One thing that you may also wish to consider doing is caching purchase IDs to make replay attacks
+ * harder. The reason this code isn't just part of the library is to allow you to customize it (and
+ * rename it!) to make generic patching exploits more difficult.
  */
-
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -74,7 +74,7 @@ class Security {
             PublicKey key = generatePublicKey(BASE_64_ENCODED_PUBLIC_KEY);
             return verify(key, signedData, signature);
         } catch (IOException e) {
-            Log.e(TAG,"Error generating PublicKey from encoded key: " + e.getMessage());
+            Log.e(TAG, "Error generating PublicKey from encoded key: " + e.getMessage());
             return false;
         }
     }

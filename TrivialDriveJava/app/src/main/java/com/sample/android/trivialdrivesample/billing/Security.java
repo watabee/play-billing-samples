@@ -73,7 +73,7 @@ class Security {
             PublicKey key = generatePublicKey(BASE_64_ENCODED_PUBLIC_KEY);
             return verify(key, signedData, signature);
         } catch (IOException e) {
-            Log.e(TAG,"Error generating PublicKey from encoded key: " + e.getMessage());
+            Log.e(TAG, "Error generating PublicKey from encoded key: " + e.getMessage());
             return false;
         }
     }

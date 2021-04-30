@@ -34,7 +34,7 @@ import kotlin.math.min
  * Purchases can happen while in the app or at any time while out of the app, so the
  * BillingDataSource has to account for that.
  *
- * Since every SKU can have an individual state, all SKUs have an associated StateFlow
+ * Since every SKU (Product ID) can have an individual state, all SKUs have an associated StateFlow
  * to allow their state to be observed.
  *
  * This BillingDataSource knows nothing about the application; all necessary information is either
@@ -410,7 +410,7 @@ class BillingDataSource private constructor(application: Application, knownInapp
     /**
      * Since we (mostly) are getting sku states when we actually make a purchase or update
      * purchases, we keep some internal state when we do things like acknowledge or consume.
-     * @param sku sku to change the state
+     * @param sku product ID to change the state of
      * @param newSkuState the new state of the sku.
      */
     private fun setSkuState(sku: String, newSkuState: SkuState) {
@@ -544,7 +544,7 @@ class BillingDataSource private constructor(application: Application, knownInapp
      * by passing in SKUs to be upgraded.
      *
      * @param activity active activity to launch our billing flow from
-     * @param sku SKU to be purchased
+     * @param sku SKU (Product ID) to be purchased
      * @param upgradeSkus SKUs that the subscription can be upgraded from
      * @return true if launch is successful
      */

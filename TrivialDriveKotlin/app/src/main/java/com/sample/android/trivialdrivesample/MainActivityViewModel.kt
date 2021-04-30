@@ -17,7 +17,6 @@
 package com.sample.android.trivialdrivesample
 
 import androidx.lifecycle.*
-import com.sample.android.trivialdrivesample.GameViewModel
 
 /*
    This is used for any business logic, as well as to echo LiveData from the BillingRepository.

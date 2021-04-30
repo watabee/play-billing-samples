@@ -42,9 +42,10 @@ import com.sample.android.trivialdrivesample.databinding.ActivityMainBinding;
  * MainActivity here exists as a container for the fragments that display the various bits of UI,
  * as well as the CoordinatorLayout/SnackBar implementation.
  */
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity {
     private MainActivityViewModel mainActivityViewModel;
     private ActivityMainBinding activityMainBinding;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,14 +64,14 @@ public class MainActivity extends AppCompatActivity{
         // Create our Activity ViewModel, which exists to handle global Snackbar messages
         MainActivityViewModel.MainActivityViewModelFactory mainActivityViewModelFactory = new
                 MainActivityViewModel.MainActivityViewModelFactory(
-                ((TrivialDriveApplication)getApplication()).appContainer.
+                ((TrivialDriveApplication) getApplication()).appContainer.
                         trivialDriveRepository);
         mainActivityViewModel = new ViewModelProvider(this, mainActivityViewModelFactory)
                 .get(MainActivityViewModel.class);
         mainActivityViewModel.getMessages().observe(this, new Observer<Integer>() {
             @Override
             public void onChanged(Integer resId) {
-                Snackbar snackbar = Snackbar.make(activityMainBinding.mainLayout,getString(resId),
+                Snackbar snackbar = Snackbar.make(activityMainBinding.mainLayout, getString(resId),
                         Snackbar.LENGTH_SHORT);
                 snackbar.show();
             }

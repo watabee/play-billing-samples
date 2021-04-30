@@ -25,7 +25,11 @@ import androidx.room.PrimaryKey;
  */
 @Entity
 public class GameState {
-    public GameState(String key, Integer value) {this.key = key; this.value = value;}
+    public GameState(String key, Integer value) {
+        this.key = key;
+        this.value = value;
+    }
+
     @PrimaryKey
     @NonNull
     public String key;

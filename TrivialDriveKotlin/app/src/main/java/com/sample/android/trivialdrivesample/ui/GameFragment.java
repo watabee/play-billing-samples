@@ -40,11 +40,10 @@ import com.sample.android.trivialdrivesample.databinding.FragmentGameBinding;
  * There's nothing about billing here; billing informationis abstracted into the BillingRepository.
  */
 public class GameFragment extends androidx.fragment.app.Fragment {
-    private String LOG_TAG = "GameFragment";
+    private final String TAG = "GameFragment";
 
     private GameViewModel gameViewModel;
     private FragmentGameBinding binding;
-    private TypedArray gasTankResourceIds;
 
     /*
         We use data binding to bind the game view with this fragment, and this allows us to
@@ -54,7 +53,7 @@ public class GameFragment extends androidx.fragment.app.Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        Log.v(LOG_TAG, "onCreateView");
+        Log.v(TAG, "onCreateView");
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_game, container, false);
         // This allows data binding to automatically observe any LiveData we pass in
         binding.setLifecycleOwner(this);
@@ -64,7 +63,7 @@ public class GameFragment extends androidx.fragment.app.Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        Log.v(LOG_TAG, "onViewCreated");
+        Log.v(TAG, "onViewCreated");
 
         GameViewModel.GameViewModelFactory gameViewModelFactory =
                 new GameViewModel.GameViewModelFactory(
@@ -74,7 +73,7 @@ public class GameFragment extends androidx.fragment.app.Fragment {
         gameViewModel = new ViewModelProvider(this,gameViewModelFactory)
                 .get(GameViewModel.class);
 
-        gasTankResourceIds = getResources().obtainTypedArray(R.array.gas_tank_images);
+        TypedArray gasTankResourceIds = getResources().obtainTypedArray(R.array.gas_tank_images);
 
         // Set the variables up that we'll be using in data binding
         binding.setGasTankImages(gasTankResourceIds);
@@ -83,7 +82,7 @@ public class GameFragment extends androidx.fragment.app.Fragment {
     }
 
     public void drive() {
-        Log.d(LOG_TAG, "Drive");
+        Log.d(TAG, "Drive");
         gameViewModel.drive();
     }
 

@@ -45,7 +45,7 @@ import java.util.List;
  * already has a full tank of gas, then they cannot buy gas at this moment.
  */
 public class MakePurchaseFragment extends Fragment {
-    String LOG_TAG = "MakePurchaseFragment";
+    String TAG = "MakePurchaseFragment";
 
     private MakePurchaseViewModel makePurchaseViewModel;
     private FragmentMakePurchaseBinding binding;

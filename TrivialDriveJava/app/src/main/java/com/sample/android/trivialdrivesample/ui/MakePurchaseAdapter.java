@@ -67,7 +67,7 @@ public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapte
                 view = inventoryItemBinding.getRoot();
                 break;
         }
-        return new ViewHolder(view,viewType,inventoryHeaderBinding,inventoryItemBinding);
+        return new ViewHolder(view, viewType, inventoryHeaderBinding, inventoryItemBinding);
     }
 
     @Override
@@ -89,18 +89,19 @@ public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapte
     static class ViewHolder extends RecyclerView.ViewHolder {
         final InventoryHeaderBinding inventoryHeaderBinding;
         final InventoryItemBinding inventoryItemBinding;
+
         public ViewHolder(View v, int viewType, InventoryHeaderBinding inventoryHeaderBinding,
                           InventoryItemBinding inventoryItemBinding
-                ) {
+        ) {
             super(v);
             this.inventoryHeaderBinding = inventoryHeaderBinding;
             this.inventoryItemBinding = inventoryItemBinding;
         }
 
-        void bind( Item item,
-                   MakePurchaseViewModel makePurchaseViewModel,
-                   MakePurchaseFragment makePurchaseFragment) {
-            switch(item.viewType) {
+        void bind(Item item,
+                  MakePurchaseViewModel makePurchaseViewModel,
+                  MakePurchaseFragment makePurchaseFragment) {
+            switch (item.viewType) {
                 case VIEW_TYPE_HEADER:
                     inventoryHeaderBinding.headerTitle.setText(item.getTitleOrSku());
                     inventoryHeaderBinding.setLifecycleOwner(makePurchaseFragment);
@@ -128,7 +129,8 @@ public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapte
             this.viewType = viewType;
         }
 
-        public @NonNull String getTitleOrSku() {
+        public @NonNull
+        String getTitleOrSku() {
             return titleOrSku;
         }
 
@@ -136,7 +138,8 @@ public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapte
             return viewType;
         }
 
-        private final @NonNull String titleOrSku;
+        private final @NonNull
+        String titleOrSku;
         private final int viewType;
     }
 }

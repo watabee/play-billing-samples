@@ -24,9 +24,9 @@ class TrivialDriveApplication : Application() {
     lateinit var appContainer: AppContainer
     // Container of objects shared across the whole app
     inner class AppContainer {
-        val applicationScope = GlobalScope
-        val gameStateModel = GameStateModel(this@TrivialDriveApplication)
-        val billingDataSource = BillingDataSource.getInstance(
+        private val applicationScope = GlobalScope
+        private val gameStateModel = GameStateModel(this@TrivialDriveApplication)
+        private val billingDataSource = BillingDataSource.getInstance(
                 this@TrivialDriveApplication,
                 TrivialDriveRepository.INAPP_SKUS,
                 TrivialDriveRepository.SUBSCRIPTION_SKUS,

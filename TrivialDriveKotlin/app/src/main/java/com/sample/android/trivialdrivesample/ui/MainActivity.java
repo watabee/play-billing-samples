@@ -25,7 +25,6 @@ import android.view.MenuItem;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.databinding.DataBindingUtil;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -68,12 +67,9 @@ public class MainActivity extends AppCompatActivity{
                 .get(MainActivityViewModel.class);
 
         // Create our Activity ViewModel, which exists to handle global Snackbar messages
-        mainActivityViewModel.getMessages().observe(this, new Observer<Integer>() {
-            @Override
-            public void onChanged(Integer resourceId) {
-                Snackbar snackbar = Snackbar.make(activityMainBinding.mainLayout,getString(resourceId),Snackbar.LENGTH_SHORT);
-                snackbar.show();
-            }
+        mainActivityViewModel.getMessages().observe(this, resourceId -> {
+            Snackbar snackbar = Snackbar.make(activityMainBinding.mainLayout,getString(resourceId),Snackbar.LENGTH_SHORT);
+            snackbar.show();
         });
         // Allows billing to refresh purchases during onResume
         getLifecycle().addObserver(mainActivityViewModel.getBillingLifecycleObserver());
@@ -89,14 +85,12 @@ public class MainActivity extends AppCompatActivity{
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
-        switch (item.getItemId()) {
-            // we could nicely disable this when we don't have a premium purchase by observing
-            // the LiveData for the SKU_GAS, but it's just there for testing
-            case R.id.menu_consume_premium:
-                mainActivityViewModel.debugConsumePremium();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        // we could nicely disable this when we don't have a premium purchase by observing
+        // the LiveData for the SKU_GAS, but it's just there for testing
+        if (item.getItemId() == R.id.menu_consume_premium) {
+            mainActivityViewModel.debugConsumePremium();
+            return true;
         }
+        return super.onOptionsItemSelected(item);
     }
 }

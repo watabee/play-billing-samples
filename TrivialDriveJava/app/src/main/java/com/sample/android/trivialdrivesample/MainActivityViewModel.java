@@ -25,8 +25,9 @@ import androidx.lifecycle.ViewModelProvider;
     This is used for any business logic, as well as to echo LiveData from the BillingRepository.
  */
 public class MainActivityViewModel extends ViewModel {
-    static final String TAG = "TrivialDrive:" + GameViewModel.class.getSimpleName();
+    static final String TAG = GameViewModel.class.getSimpleName();
     private final TrivialDriveRepository tdr;
+
     public MainActivityViewModel(TrivialDriveRepository trivialDriveRepository) {
         tdr = trivialDriveRepository;
     }
@@ -55,7 +56,7 @@ public class MainActivityViewModel extends ViewModel {
         @Override
         public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
             if (modelClass.isAssignableFrom(MainActivityViewModel.class)) {
-                return (T)new MainActivityViewModel(trivialDriveRepository);
+                return (T) new MainActivityViewModel(trivialDriveRepository);
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }

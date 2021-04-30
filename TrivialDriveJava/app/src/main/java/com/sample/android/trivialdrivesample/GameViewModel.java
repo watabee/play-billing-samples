@@ -27,12 +27,13 @@ import androidx.lifecycle.ViewModelProvider;
 public class GameViewModel extends ViewModel {
     static final String TAG = GameViewModel.class.getSimpleName();
     private final TrivialDriveRepository tdr;
+
     public GameViewModel(@NonNull TrivialDriveRepository trivialDriveRepository) {
         super();
         tdr = trivialDriveRepository;
     }
 
-    public void drive(){
+    public void drive() {
         tdr.drive();
     }
 
@@ -47,6 +48,7 @@ public class GameViewModel extends ViewModel {
     public LiveData<Boolean> isPremium() {
         return tdr.isPurchased(TrivialDriveRepository.SKU_PREMIUM);
     }
+
     public LiveData<Integer> getGasUnitsRemaining() {
         return tdr.gasTankLevel();
     }
@@ -67,7 +69,7 @@ public class GameViewModel extends ViewModel {
         @Override
         public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
             if (modelClass.isAssignableFrom(GameViewModel.class)) {
-                return (T)new GameViewModel(trivialDriveRepository);
+                return (T) new GameViewModel(trivialDriveRepository);
             }
             throw new IllegalArgumentException("Unknown ViewModel class");
         }

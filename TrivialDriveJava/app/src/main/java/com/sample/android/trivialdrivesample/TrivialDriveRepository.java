@@ -21,7 +21,6 @@ import android.util.Log;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
-import androidx.lifecycle.Observer;
 
 import com.sample.android.trivialdrivesample.billing.BillingDataSource;
 import com.sample.android.trivialdrivesample.db.GameStateModel;
@@ -31,8 +30,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * The repository uses data from the Billing data source and the game state model together to give
- * a unified version of the state of the game to the ViewModel. It works closely with the
+ * The repository uses data from the Billing data source and the game state model together to give a
+ * unified version of the state of the game to the ViewModel. It works closely with the
  * BillingDataSource to implement consumable items, premium items, etc.
  */
 public class TrivialDriveRepository {
@@ -53,7 +52,6 @@ public class TrivialDriveRepository {
             SKU_INFINITE_GAS_YEARLY};
     static final String[] AUTO_CONSUME_SKUS = new String[]{SKU_GAS};
 
-    private static volatile TrivialDriveRepository sInstance;
     final BillingDataSource billingDataSource;
     final GameStateModel gameStateModel;
     final SingleMediatorLiveEvent<Integer> gameMessages;
@@ -61,7 +59,7 @@ public class TrivialDriveRepository {
     final ExecutorService driveExecutor = Executors.newSingleThreadExecutor();
 
     public TrivialDriveRepository(BillingDataSource billingDataSource,
-                                  GameStateModel gameStateModel) {
+            GameStateModel gameStateModel) {
         this.billingDataSource = billingDataSource;
         this.gameStateModel = gameStateModel;
 
@@ -77,36 +75,27 @@ public class TrivialDriveRepository {
     }
 
     /**
-     * Sets up the event that we can use to send messages up to the UI to be used in Snackbars.
-     * This SingleMediatorLiveEvent observes changes in SingleLiveEvents coming from the rest of the
-     * game and combines them into a single source with new purchase events from the
-     * BillingDataSource. Since the billing data source doesn't know about our SKUs, it also
-     * transforms the known SKU strings into useful String messages.
+     * Sets up the event that we can use to send messages up to the UI to be used in Snackbars. This
+     * SingleMediatorLiveEvent observes changes in SingleLiveEvents coming from the rest of the game
+     * and combines them into a single source with new purchase events from the BillingDataSource.
+     * Since the billing data source doesn't know about our SKUs, it also transforms the known SKU
+     * strings into useful String messages.
      */
     void setupMessagesSingleMediatorLiveEVent() {
         final LiveData<String> billingMessages = billingDataSource.observeNewPurchases();
-        allMessages.addSource(gameMessages,
-                new Observer<Integer>() {
-                    @Override
-                    public void onChanged(Integer resId) {
-                        allMessages.setValue(resId);
-                    }
-                });
+        allMessages.addSource(gameMessages, allMessages::setValue);
         allMessages.addSource(billingMessages,
-                new Observer<String>() {
-                    @Override
-                    public void onChanged(String s) {
-                        switch (s) {
-                            case SKU_GAS:
-                                allMessages.setValue(R.string.message_more_gas_acquired);
-                                break;
-                            case SKU_PREMIUM:
-                                allMessages.setValue(R.string.message_premium);
-                                break;
-                            case SKU_INFINITE_GAS_MONTHLY:
-                                allMessages.setValue(R.string.message_subscribed);
-                                break;
-                        }
+                s -> {
+                    switch (s) {
+                        case SKU_GAS:
+                            allMessages.setValue(R.string.message_more_gas_acquired);
+                            break;
+                        case SKU_PREMIUM:
+                            allMessages.setValue(R.string.message_premium);
+                            break;
+                        case SKU_INFINITE_GAS_MONTHLY:
+                            allMessages.setValue(R.string.message_subscribed);
+                            break;
                     }
                 });
     }
@@ -117,7 +106,7 @@ public class TrivialDriveRepository {
     public void drive() {
         // We run this all on a background thread since we're not using a LiveData observable
         // to get the gas level and want to avoid doing database queries on the main thread.
-        driveExecutor.submit(()-> {
+        driveExecutor.submit(() -> {
             int gasLevel = gameStateModel.getCurrentGasTankLevel();
             switch (gasLevel) {
                 case TrivialDriveRepository.GAS_TANK_INFINITE:
@@ -141,12 +130,13 @@ public class TrivialDriveRepository {
 
     /**
      * Automatic support for upgrading/downgrading subscription.
-     * @param activity
-     * @param sku
+     *
+     * @param activity Needed by billing library to start the Google Play billing activity
+     * @param sku the product ID to purchase
      */
     public boolean buySku(Activity activity, String sku) {
         String oldSku = null;
-        switch(sku) {
+        switch (sku) {
             case SKU_INFINITE_GAS_MONTHLY:
                 oldSku = SKU_INFINITE_GAS_YEARLY;
                 break;
@@ -170,13 +160,13 @@ public class TrivialDriveRepository {
     private void combineGasAndCanPurchaseData(
             MediatorLiveData<Boolean> result,
             LiveData<Integer> gasTankLevel,
-            LiveData<Boolean> canPurchase)
-    {
+            LiveData<Boolean> canPurchase) {
         // don't emit until we have all of our data
-        if ( null == canPurchase.getValue() || null == gasTankLevel.getValue() ) {
+        if (null == canPurchase.getValue() || null == gasTankLevel.getValue()) {
             return;
         }
-        Log.d(TAG, "GetPurchase: " + canPurchase.getValue()+ " GasTankLevel: " + gasTankLevel.getValue());
+        Log.d(TAG, "GetPurchase: " + canPurchase.getValue() + " GasTankLevel: "
+                + gasTankLevel.getValue());
         result.setValue(canPurchase.getValue() && (gasTankLevel.getValue() < GAS_TANK_MAX));
     }
 
@@ -184,7 +174,8 @@ public class TrivialDriveRepository {
      * We can buy if we have at least one unit of gas and a purchase isn't in progress. For other
      * skus, we can purchase them if they aren't already purchased. For subscriptions, only one of
      * the two should be held at a time, although that is only enforced by business logic.
-     * @param sku the SKU to get and observe the value for
+     *
+     * @param sku the product ID to get and observe the value for
      * @return LiveData that returns true if the sku can be purchased
      */
     public LiveData<Boolean> canPurchase(String sku) {
@@ -210,20 +201,22 @@ public class TrivialDriveRepository {
             LiveData<Boolean> monthlySubscription,
             LiveData<Boolean> yearlySubscription
     ) {
-        boolean isMonthlySubscription = monthlySubscription.getValue() == null ? false : monthlySubscription.getValue();
-        boolean isYearlySubscription = yearlySubscription.getValue() == null ? false : yearlySubscription.getValue();
-        if (isMonthlySubscription || isYearlySubscription)
+        boolean isMonthlySubscription =
+                monthlySubscription.getValue() == null ? false : monthlySubscription.getValue();
+        boolean isYearlySubscription =
+                yearlySubscription.getValue() == null ? false : yearlySubscription.getValue();
+        if (isMonthlySubscription || isYearlySubscription) {
             result.setValue(GAS_TANK_INFINITE);
-        else {
+        } else {
             Integer gasTankLevelValue = gasTankLevel.getValue();
-            if ( null == gasTankLevelValue ) return;
+            if (null == gasTankLevelValue) return;
             result.setValue(gasTankLevelValue);
         }
     }
 
     /**
-     * Combine the results from our subscription LiveData with our gas tank level to get our
-     * real gas tank level.
+     * Combine the results from our subscription LiveData with our gas tank level to get our real
+     * gas tank level.
      *
      * @return LiveData that represents the gasTankLevel by game logic.
      */
@@ -234,7 +227,7 @@ public class TrivialDriveRepository {
         final LiveData<Boolean> yearlySubPurchased = isPurchased(SKU_INFINITE_GAS_YEARLY);
 
         result.addSource(gasTankLevel, level ->
-               combineGasAndSubscriptionData(result, gasTankLevel,
+                combineGasAndSubscriptionData(result, gasTankLevel,
                         monthlySubPurchased, yearlySubPurchased));
         result.addSource(monthlySubPurchased, subPurchased ->
                 combineGasAndSubscriptionData(result, gasTankLevel,
@@ -248,6 +241,7 @@ public class TrivialDriveRepository {
     public final void refreshPurchases() {
         billingDataSource.refreshPurchases();
     }
+
     public final LifecycleObserver getBillingLifecycleObserver() {
         return billingDataSource;
     }

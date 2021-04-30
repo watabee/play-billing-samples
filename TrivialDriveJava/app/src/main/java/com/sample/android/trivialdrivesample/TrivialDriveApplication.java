@@ -29,9 +29,9 @@ public class TrivialDriveApplication extends Application {
         GameStateModel gameStateModel = new GameStateModel(TrivialDriveApplication.this);
         BillingDataSource billingDataSource = BillingDataSource.getInstance(
                 TrivialDriveApplication.this,
-        TrivialDriveRepository.INAPP_SKUS,
-        TrivialDriveRepository.SUBSCRIPTION_SKUS,
-        TrivialDriveRepository.AUTO_CONSUME_SKUS);
+                TrivialDriveRepository.INAPP_SKUS,
+                TrivialDriveRepository.SUBSCRIPTION_SKUS,
+                TrivialDriveRepository.AUTO_CONSUME_SKUS);
         public TrivialDriveRepository trivialDriveRepository = new TrivialDriveRepository(
                 billingDataSource,
                 gameStateModel);
