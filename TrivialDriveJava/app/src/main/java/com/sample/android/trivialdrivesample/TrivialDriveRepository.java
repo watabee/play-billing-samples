@@ -64,7 +64,7 @@ public class TrivialDriveRepository {
         this.gameStateModel = gameStateModel;
 
         gameMessages = new SingleMediatorLiveEvent<>();
-        setupMessagesSingleMediatorLiveEVent();
+        setupMessagesSingleMediatorLiveEvent();
 
         // Since both are tied to application lifecycle
         billingDataSource.observeConsumedPurchases().observeForever(sku -> {
@@ -81,7 +81,7 @@ public class TrivialDriveRepository {
      * Since the billing data source doesn't know about our SKUs, it also transforms the known SKU
      * strings into useful String messages.
      */
-    void setupMessagesSingleMediatorLiveEVent() {
+    void setupMessagesSingleMediatorLiveEvent() {
         final LiveData<String> billingMessages = billingDataSource.observeNewPurchases();
         allMessages.addSource(gameMessages, allMessages::setValue);
         allMessages.addSource(billingMessages,
@@ -94,6 +94,10 @@ public class TrivialDriveRepository {
                             allMessages.setValue(R.string.message_premium);
                             break;
                         case SKU_INFINITE_GAS_MONTHLY:
+                        case SKU_INFINITE_GAS_YEARLY:
+                            // this makes sure that upgraded and downgraded subscriptions are
+                            // reflected correctly in the app UI
+                            billingDataSource.refreshPurchases();
                             allMessages.setValue(R.string.message_subscribed);
                             break;
                     }

@@ -97,9 +97,8 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
         BillingClientStateListener, SkuDetailsResponseListener {
     private static final String TAG = "TrivialDrive:" + BillingDataSource.class.getSimpleName();
     private static final long RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L;
-    private static final long RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L;
-            // 15 minutes
-    private static final long SKU_DETAILS_REQUERY_TIME = 1000L * 60L * 60L * 4L;          // 4 hours
+    private static final long RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L; // 15 mins
+    private static final long SKU_DETAILS_REQUERY_TIME = 1000L * 60L * 60L * 4L; // 4 hours
     private static final Handler handler = new Handler(Looper.getMainLooper());
     private static volatile BillingDataSource sInstance;
     // Billing client, connection, cached data
@@ -149,13 +148,16 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
     /*
         Standard boilerplate double check locking pattern for thread-safe singletons.
      */
-    public static BillingDataSource getInstance(@NonNull Application application,
+    public static BillingDataSource getInstance(
+            @NonNull Application application,
             String[] knownInappSKUs,
-            String[] knownSubscriptionSKUs, String[] autoConsumeSKUs) {
+            String[] knownSubscriptionSKUs,
+            String[] autoConsumeSKUs) {
         if (sInstance == null) {
             synchronized (BillingDataSource.class) {
                 if (sInstance == null) {
-                    sInstance = new BillingDataSource(application,
+                    sInstance = new BillingDataSource(
+                            application,
                             knownInappSKUs,
                             knownSubscriptionSKUs,
                             autoConsumeSKUs);
@@ -421,7 +423,7 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
     }
 
     /*
-        IAB v3 now queries purchases synchronously, simplifying this flow. This only gets active
+        GPBL v3 now queries purchases synchronously, simplifying this flow. This only gets active
         purchases.
      */
     public void refreshPurchases() {

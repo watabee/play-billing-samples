@@ -16,7 +16,11 @@
 
 package com.sample.android.trivialdrivesample
 
-import androidx.lifecycle.*
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.asLiveData
 
 /*
    This is used for any business logic, as well as to echo LiveData from the BillingRepository.

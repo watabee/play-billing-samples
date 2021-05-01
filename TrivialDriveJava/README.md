@@ -1,13 +1,14 @@
 Trivial Drive
 ============
 
-Sample for In-App Billing Library version 3
+Sample for Google Play Billing Library version 3
 
 Introduction
 ------------
 
-This sample is provided to demonstrate Google Play In-app Billing. To read
-more visit https://developer.android.com/google/play/billing/index.html
+This sample is provided to demonstrate using the Google Play Billing Library
+for in-app items and simple subscriptions. To read more visit 
+https://developer.android.com/google/play/billing/index.html
 
 This game is a simple "driving" game where the player can buy gas
 and drive. The car has a tank which stores gas. When the player purchases
@@ -137,4 +138,4 @@ CHANGELOG
    2013-01-08: Updated to include support for subscriptions
    2015-03-13: Updated to new dev console and added yearly subscriptions
    2015-08-27: Ported to gradle and prepped for transitioning to GitHub
-   2021-04-28: Rewritten and updated to support In-App-Billing Library V3
+   2021-04-28: Rewritten and updated to support Google Play Billing Library V3

@@ -22,11 +22,39 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
-import androidx.lifecycle.*
-import kotlinx.coroutines.*
-import com.android.billingclient.api.*
-import kotlinx.coroutines.flow.*
-import java.util.*
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleObserver
+import androidx.lifecycle.OnLifecycleEvent
+import com.android.billingclient.api.acknowledgePurchase
+import com.android.billingclient.api.AcknowledgePurchaseParams
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingClientStateListener
+import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchasesUpdatedListener
+import com.android.billingclient.api.SkuDetails
+import com.android.billingclient.api.SkuDetailsParams
+import com.android.billingclient.api.SkuDetailsResponseListener
+import com.android.billingclient.api.consumePurchase
+import com.android.billingclient.api.querySkuDetails
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import java.util.Arrays
+import java.util.LinkedList
 import kotlin.math.min
 
 /**
@@ -68,8 +96,11 @@ private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 private const val SKU_DETAILS_REQUERY_TIME = 1000L * 60L * 60L * 4L         // 4 hours
 
-class BillingDataSource private constructor(application: Application, knownInappSKUs: Array<String>?,
-                                            knownSubscriptionSKUs: Array<String>?, autoConsumeSKUs: Array<String>?)
+class BillingDataSource private constructor(application: Application,
+                                            private val defaultScope: CoroutineScope,
+                                            knownInappSKUs: Array<String>?,
+                                            knownSubscriptionSKUs: Array<String>?,
+                                            autoConsumeSKUs: Array<String>?)
     : LifecycleObserver, PurchasesUpdatedListener, BillingClientStateListener {
     // Billing client, connection, cached data
     private val billingClient: BillingClient
@@ -148,13 +179,13 @@ class BillingDataSource private constructor(application: Application, knownInapp
             details.subscriptionCount.map { count -> count > 0 } // map count into active/inactive flag
                     .distinctUntilChanged() // only react to true<->false changes
                     .onEach { isActive -> // configure an action
-                        if ( isActive && (SystemClock.elapsedRealtime()-skuDetailsResponseTime > SKU_DETAILS_REQUERY_TIME ) ) {
+                        if (isActive && (SystemClock.elapsedRealtime() - skuDetailsResponseTime > SKU_DETAILS_REQUERY_TIME)) {
                             skuDetailsResponseTime = SystemClock.elapsedRealtime()
                             Log.v(TAG, "Skus not fresh, requerying")
                             querySkuDetailsAsync()
                         }
                     }
-                    .launchIn(CoroutineScope(Dispatchers.Main)) // launch it
+                    .launchIn(defaultScope) // launch it
             skuStateMap[sku] = skuState
             skuDetailsMap[sku] = details
         }
@@ -200,8 +231,8 @@ class BillingDataSource private constructor(application: Application, knownInapp
         val skuDetailsFlow = skuDetailsMap[sku]!!
         val skuStateFlow = skuStateMap[sku]!!
 
-        return skuStateFlow.combine( skuDetailsFlow ) { skuState, skuDetails ->
-                skuState == SkuState.SKU_STATE_UNPURCHASED && skuDetails != null
+        return skuStateFlow.combine(skuDetailsFlow) { skuState, skuDetails ->
+            skuState == SkuState.SKU_STATE_UNPURCHASED && skuDetails != null
         }
     }
 
@@ -275,7 +306,7 @@ class BillingDataSource private constructor(application: Application, knownInapp
                 Log.wtf(TAG, "onSkuDetailsResponse: $responseCode $debugMessage")
             else -> Log.wtf(TAG, "onSkuDetailsResponse: $responseCode $debugMessage")
         }
-        if ( responseCode == BillingClient.BillingResponseCode.OK ) {
+        if (responseCode == BillingClient.BillingResponseCode.OK) {
             skuDetailsResponseTime = SystemClock.elapsedRealtime()
         } else {
             skuDetailsResponseTime = -SKU_DETAILS_REQUERY_TIME
@@ -288,7 +319,7 @@ class BillingDataSource private constructor(application: Application, knownInapp
      * required to make a purchase.
      */
     private fun querySkuDetailsAsync() {
-        CoroutineScope(Dispatchers.Main).launch {
+        defaultScope.launch {
             if (!knownInappSKUs.isNullOrEmpty()) {
                 val skuDetailsResult = billingClient.querySkuDetails(SkuDetailsParams.newBuilder()
                         .setType(BillingClient.SkuType.INAPP)
@@ -307,7 +338,7 @@ class BillingDataSource private constructor(application: Application, knownInapp
     }
 
     /*
-        IAB v3 now queries purchases synchronously, simplifying this flow. This only gets active
+        GPBLv3 now queries purchases synchronously, simplifying this flow. This only gets active
         purchases.
      */
     fun refreshPurchases() {
@@ -461,17 +492,17 @@ class BillingDataSource private constructor(application: Application, knownInapp
                 // This check is best performed on your server.
                 val purchaseState = purchase.purchaseState
                 if (purchaseState == Purchase.PurchaseState.PURCHASED) {
-                    Log.e(TAG, "Purchase detected: " + sku);
+                    Log.e(TAG, "Purchase detected: $sku")
                     if (!isSignatureValid(purchase)) {
-                        Log.e(TAG, "Invalid signature on SKU " + sku + ". Check to make " +
-                                "sure your public key is correct.")
+                        Log.e(TAG, "Invalid signature on SKU $sku. Check to make sure your " +
+                                "public key is correct.")
                         continue
                     }
                     // only set the purchased state after we've validated the signature.
                     setSkuStateFromPurchase(purchase)
                     CoroutineScope(Dispatchers.Main).launch {
                         if (knownAutoConsumeSKUs.contains(sku)) {
-                            consumePurchase(purchase);
+                            consumePurchase(purchase)
                             newPurchaseFlow.tryEmit(sku)
                         } else if (!purchase.isAcknowledged) {
                             // acknowledge everything --- new purchases are ones not yet acknowledged
@@ -479,9 +510,9 @@ class BillingDataSource private constructor(application: Application, knownInapp
                                     .setPurchaseToken(purchase.purchaseToken)
                                     .build())
                             if (billingResult.responseCode != com.android.billingclient.api.BillingClient.BillingResponseCode.OK) {
-                                Log.e(TAG, "Error acknowledging purchase: " + sku);
+                                Log.e(TAG, "Error acknowledging purchase: $sku")
                             } else {
-                                Log.e(TAG, "Purchase acknowledged: " + sku);
+                                Log.e(TAG, "Purchase acknowledged: $sku")
                                 // purchase acknowledged
                                 setSkuState(sku, com.sample.android.trivialdrivesample.billing.BillingDataSource.SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED)
                             }
@@ -525,16 +556,15 @@ class BillingDataSource private constructor(application: Application, knownInapp
                 .build())
 
         purchaseConsumptionInProcess.remove(sku)
-        if ( consumePurchaseResult.billingResult.responseCode == BillingClient.BillingResponseCode.OK ) {
+        if (consumePurchaseResult.billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
             Log.d(TAG, "Consumption successful. Emitting sku.")
-            CoroutineScope(Dispatchers.Main).launch() {
+            CoroutineScope(Dispatchers.Main).launch {
                 purchaseConsumedFlow.emit(sku)
             }
             // Since we've consumed the purchase
             setSkuState(sku, SkuState.SKU_STATE_UNPURCHASED)
         } else {
-            Log.e(TAG, "Error while consuming: " +
-                    consumePurchaseResult.billingResult.debugMessage)
+            Log.e(TAG, "Error while consuming: ${consumePurchaseResult.billingResult.debugMessage}")
         }
     }
 
@@ -635,7 +665,7 @@ class BillingDataSource private constructor(application: Application, knownInapp
         Log.d(TAG, "ON_RESUME")
         // this just avoids an extra purchase refresh after we finish a billing flow
         if (!billingFlowInProcess.value) {
-            if ( billingClient.isReady ) {
+            if (billingClient.isReady) {
                 refreshPurchases()
             }
         }
@@ -643,19 +673,26 @@ class BillingDataSource private constructor(application: Application, knownInapp
 
     companion object {
         private val TAG = "TrivialDrive:" + BillingDataSource::class.java.simpleName
+
         @Volatile
         private var sInstance: BillingDataSource? = null
         private val handler = Handler(Looper.getMainLooper())
 
         // Standard boilerplate double check locking pattern for thread-safe singletons.
         @JvmStatic
-        fun getInstance(application: Application, knownInappSKUs: Array<String>?,
-                        knownSubscriptionSKUs: Array<String>?, autoConsumeSKUs: Array<String>?) =
-                sInstance ?: synchronized( this ) {
-                    sInstance ?: BillingDataSource(application,
+        fun getInstance(
+                application: Application,
+                defaultScope: CoroutineScope,
+                knownInappSKUs: Array<String>?,
+                knownSubscriptionSKUs: Array<String>?,
+                autoConsumeSKUs: Array<String>?
+        ) = sInstance ?: synchronized(this) {
+            sInstance ?: BillingDataSource(application,
+                    defaultScope,
                     knownInappSKUs,
                     knownSubscriptionSKUs,
-                    autoConsumeSKUs).also { sInstance = it }
+                    autoConsumeSKUs)
+            .also { sInstance = it }
         }
     }
 
@@ -666,14 +703,25 @@ class BillingDataSource private constructor(application: Application, knownInapp
      * @param knownSubscriptionSKUs SKUs of subscriptions the source should know about
      */
     init {
-        this.knownInappSKUs = if (knownInappSKUs == null) ArrayList() else Arrays.asList(*knownInappSKUs)
-        this.knownSubscriptionSKUs = if (knownSubscriptionSKUs == null) ArrayList() else Arrays.asList(*knownSubscriptionSKUs)
+        this.knownInappSKUs = if (knownInappSKUs == null) {
+            ArrayList()
+        } else {
+            Arrays.asList(*knownInappSKUs)
+        }
+        this.knownSubscriptionSKUs = if (knownSubscriptionSKUs == null) {
+            ArrayList()
+        } else {
+            Arrays.asList(*knownSubscriptionSKUs)
+        }
         knownAutoConsumeSKUs = HashSet()
         if (autoConsumeSKUs != null) {
             knownAutoConsumeSKUs.addAll(Arrays.asList(*autoConsumeSKUs))
         }
         initializeFlows()
-        billingClient = BillingClient.newBuilder(application).setListener(this).enablePendingPurchases().build()
+        billingClient = BillingClient.newBuilder(application)
+                .setListener(this)
+                .enablePendingPurchases()
+                .build()
         billingClient.startConnection(this)
     }
 }

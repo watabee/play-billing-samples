@@ -17,9 +17,13 @@
 package com.sample.android.trivialdrivesample
 
 import android.app.Activity
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.HashMap
 import kotlin.collections.set
 
 /*

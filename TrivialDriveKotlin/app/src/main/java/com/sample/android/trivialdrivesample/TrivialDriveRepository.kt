@@ -23,7 +23,11 @@ import com.sample.android.trivialdrivesample.billing.BillingDataSource
 import com.sample.android.trivialdrivesample.db.GameStateModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -51,7 +55,13 @@ class TrivialDriveRepository(
                     when (sku) {
                         SKU_GAS -> gameMessages.emit(R.string.message_more_gas_acquired)
                         SKU_PREMIUM -> gameMessages.emit(R.string.message_premium)
-                        SKU_INFINITE_GAS_MONTHLY -> gameMessages.emit(R.string.message_subscribed)
+                        SKU_INFINITE_GAS_MONTHLY,
+                        SKU_INFINITE_GAS_YEARLY -> {
+                            // this makes sure that upgrades/downgrades to subscriptions are
+                            // reflected correctly in our user interface
+                            billingDataSource.refreshPurchases()
+                            gameMessages.emit(R.string.message_subscribed)
+                        }
                     }
                 }
             } catch (e: Throwable) {
