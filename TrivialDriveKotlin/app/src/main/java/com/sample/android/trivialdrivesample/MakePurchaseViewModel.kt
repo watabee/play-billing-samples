@@ -77,7 +77,7 @@ class MakePurchaseViewModel(private val tdr: TrivialDriveRepository) : ViewModel
     }
 
     class MakePurchaseViewModelFactory(private val trivialDriveRepository: TrivialDriveRepository) :
-            ViewModelProvider.Factory {
+        ViewModelProvider.Factory {
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MakePurchaseViewModel::class.java)) {
                 return MakePurchaseViewModel(trivialDriveRepository) as T

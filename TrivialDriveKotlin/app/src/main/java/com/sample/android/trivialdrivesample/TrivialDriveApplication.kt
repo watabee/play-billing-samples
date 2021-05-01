@@ -27,15 +27,17 @@ class TrivialDriveApplication : Application() {
         private val applicationScope = GlobalScope
         private val gameStateModel = GameStateModel(this@TrivialDriveApplication)
         private val billingDataSource = BillingDataSource.getInstance(
-                this@TrivialDriveApplication,
-                applicationScope,
-                TrivialDriveRepository.INAPP_SKUS,
-                TrivialDriveRepository.SUBSCRIPTION_SKUS,
-                TrivialDriveRepository.AUTO_CONSUME_SKUS)
+            this@TrivialDriveApplication,
+            applicationScope,
+            TrivialDriveRepository.INAPP_SKUS,
+            TrivialDriveRepository.SUBSCRIPTION_SKUS,
+            TrivialDriveRepository.AUTO_CONSUME_SKUS
+        )
         val trivialDriveRepository = TrivialDriveRepository(
-                billingDataSource,
-                gameStateModel,
-                applicationScope)
+            billingDataSource,
+            gameStateModel,
+            applicationScope
+        )
     }
 
     override fun onCreate() {

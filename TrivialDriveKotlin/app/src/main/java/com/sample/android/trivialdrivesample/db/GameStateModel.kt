@@ -33,13 +33,13 @@ class GameStateModel(application: Application) {
     private val gasTankLevel: Flow<Int>
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.IO
 
-    suspend fun decrementGas(minLevel: Int) : Int {
+    suspend fun decrementGas(minLevel: Int): Int {
         return withContext(defaultDispatcher) {
-                gameStateDao.decrement(GAS_LEVEL, minLevel)
+            gameStateDao.decrement(GAS_LEVEL, minLevel)
         }
     }
 
-    suspend fun incrementGas(maxLevel: Int) : Int {
+    suspend fun incrementGas(maxLevel: Int): Int {
         return withContext(defaultDispatcher) {
             gameStateDao.increment(GAS_LEVEL, maxLevel)
         }
@@ -56,10 +56,12 @@ class GameStateModel(application: Application) {
     init {
         // This creates our DB and populates our game state database with the initial state of
         // a full tank
-        db = Room.databaseBuilder(application,
-                GameStateDatabase::class.java, "GameState.db")
-                .createFromAsset("database/initialgamestate.db")
-                .build()
+        db = Room.databaseBuilder(
+            application,
+            GameStateDatabase::class.java, "GameState.db"
+        )
+            .createFromAsset("database/initialgamestate.db")
+            .build()
         gameStateDao = db.gameStateDao()
         // this causes the gasTankLevel from our Room database to behave more like LiveData
         gasTankLevel = gameStateDao[GAS_LEVEL].distinctUntilChanged().shareIn(CoroutineScope(Dispatchers.Main), SharingStarted.Lazily, 1)

@@ -36,9 +36,9 @@ import kotlinx.coroutines.launch
  * BillingDataSource to implement consumable items, premium items, etc.
  */
 class TrivialDriveRepository(
-        private val billingDataSource: BillingDataSource,
-        private val gameStateModel: GameStateModel,
-        private val defaultScope: CoroutineScope
+    private val billingDataSource: BillingDataSource,
+    private val gameStateModel: GameStateModel,
+    private val defaultScope: CoroutineScope
 ) {
     private val gameMessages: MutableSharedFlow<Int> = MutableSharedFlow()
 
@@ -153,9 +153,10 @@ class TrivialDriveRepository(
         val monthlySubPurchasedFlow = isPurchased(SKU_INFINITE_GAS_MONTHLY)
         val yearlySubPurchasedFlow = isPurchased(SKU_INFINITE_GAS_YEARLY)
         return combine(
-                gasTankLevelFlow,
-                monthlySubPurchasedFlow,
-                yearlySubPurchasedFlow) { gasTankLevel, monthlySubPurchased, yearlySubPurchased ->
+            gasTankLevelFlow,
+            monthlySubPurchasedFlow,
+            yearlySubPurchasedFlow
+        ) { gasTankLevel, monthlySubPurchased, yearlySubPurchased ->
             when {
                 monthlySubPurchased || yearlySubPurchased -> GAS_TANK_INFINITE
                 else -> gasTankLevel
@@ -216,8 +217,10 @@ class TrivialDriveRepository(
         const val SKU_INFINITE_GAS_YEARLY = "infinite_gas_yearly"
         val TAG = TrivialDriveRepository::class.simpleName
         val INAPP_SKUS = arrayOf(SKU_PREMIUM, SKU_GAS)
-        val SUBSCRIPTION_SKUS = arrayOf(SKU_INFINITE_GAS_MONTHLY,
-                SKU_INFINITE_GAS_YEARLY)
+        val SUBSCRIPTION_SKUS = arrayOf(
+            SKU_INFINITE_GAS_MONTHLY,
+            SKU_INFINITE_GAS_YEARLY
+        )
         val AUTO_CONSUME_SKUS = arrayOf(SKU_GAS)
     }
 
