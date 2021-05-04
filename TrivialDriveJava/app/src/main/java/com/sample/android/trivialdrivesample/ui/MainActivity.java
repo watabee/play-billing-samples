@@ -25,10 +25,9 @@ import android.view.MenuItem;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.databinding.DataBindingUtil;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
@@ -52,8 +51,11 @@ public class MainActivity extends AppCompatActivity {
         Log.v("MainActivity", "onCreate");
         activityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
+        NavHostFragment navHostFragment = (NavHostFragment)getSupportFragmentManager()
+                .findFragmentById(R.id.nav_host_fragment);
+
         // Setup toolbar with nav controller
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
+        NavController navController = navHostFragment.getNavController();
         AppBarConfiguration appBarConfiguration =
                 new AppBarConfiguration.Builder(navController.getGraph()).build();
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -68,13 +70,10 @@ public class MainActivity extends AppCompatActivity {
                         trivialDriveRepository);
         mainActivityViewModel = new ViewModelProvider(this, mainActivityViewModelFactory)
                 .get(MainActivityViewModel.class);
-        mainActivityViewModel.getMessages().observe(this, new Observer<Integer>() {
-            @Override
-            public void onChanged(Integer resId) {
-                Snackbar snackbar = Snackbar.make(activityMainBinding.mainLayout, getString(resId),
-                        Snackbar.LENGTH_SHORT);
-                snackbar.show();
-            }
+        mainActivityViewModel.getMessages().observe(this, resId -> {
+            Snackbar snackbar = Snackbar.make(activityMainBinding.mainLayout, getString(resId),
+                    Snackbar.LENGTH_SHORT);
+            snackbar.show();
         });
         // Allows billing to refresh purchases during onResume
         getLifecycle().addObserver(mainActivityViewModel.getBillingLifecycleObserver());
@@ -89,15 +88,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle item selection
-        switch (item.getItemId()) {
-            // we could nicely disable this when we don't have a premium purchase by observing
-            // the LiveData for the SKU_GAS, but it's just there for testing
-            case R.id.menu_consume_premium:
-                mainActivityViewModel.debugConsumePremium();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        // we could nicely disable this when we don't have a premium purchase by observing
+        // the LiveData for the SKU_GAS, but it's just there for testing
+        if (item.getItemId() == R.id.menu_consume_premium) {
+            mainActivityViewModel.debugConsumePremium();
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
         }
     }
 }

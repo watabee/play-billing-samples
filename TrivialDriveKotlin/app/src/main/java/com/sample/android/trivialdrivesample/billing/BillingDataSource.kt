@@ -52,7 +52,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import java.util.Arrays
 import java.util.LinkedList
 import kotlin.math.min
 
@@ -131,7 +130,7 @@ class BillingDataSource private constructor(
     private val purchaseConsumptionInProcess: MutableSet<String> = HashSet()
     private val newPurchaseFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
     private val purchaseConsumedFlow = MutableSharedFlow<String>()
-    private val billingFlowInProcess = MutableStateFlow<Boolean>(false)
+    private val billingFlowInProcess = MutableStateFlow(false)
 
     override fun onBillingSetupFinished(billingResult: BillingResult) {
         val responseCode = billingResult.responseCode
@@ -535,12 +534,12 @@ class BillingDataSource private constructor(
                                     .setPurchaseToken(purchase.purchaseToken)
                                     .build()
                             )
-                            if (billingResult.responseCode != com.android.billingclient.api.BillingClient.BillingResponseCode.OK) {
+                            if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                                 Log.e(TAG, "Error acknowledging purchase: $sku")
                             } else {
                                 Log.e(TAG, "Purchase acknowledged: $sku")
                                 // purchase acknowledged
-                                setSkuState(sku, com.sample.android.trivialdrivesample.billing.BillingDataSource.SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED)
+                                setSkuState(sku, SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED)
                             }
                             newPurchaseFlow.tryEmit(sku)
                         }
@@ -603,7 +602,7 @@ class BillingDataSource private constructor(
      *
      * @param activity active activity to launch our billing flow from
      * @param sku SKU (Product ID) to be purchased
-     * @param upgradeSkus SKUs that the subscription can be upgraded from
+     * @param upgradeSkusVarargs SKUs that the subscription can be upgraded from
      * @return true if launch is successful
      */
     fun launchBillingFlow(activity: Activity?, sku: String, vararg upgradeSkusVarargs: String): Boolean {
@@ -745,16 +744,16 @@ class BillingDataSource private constructor(
         this.knownInappSKUs = if (knownInappSKUs == null) {
             ArrayList()
         } else {
-            Arrays.asList(*knownInappSKUs)
+            listOf(*knownInappSKUs)
         }
         this.knownSubscriptionSKUs = if (knownSubscriptionSKUs == null) {
             ArrayList()
         } else {
-            Arrays.asList(*knownSubscriptionSKUs)
+            listOf(*knownSubscriptionSKUs)
         }
         knownAutoConsumeSKUs = HashSet()
         if (autoConsumeSKUs != null) {
-            knownAutoConsumeSKUs.addAll(Arrays.asList(*autoConsumeSKUs))
+            knownAutoConsumeSKUs.addAll(listOf(*autoConsumeSKUs))
         }
         initializeFlows()
         billingClient = BillingClient.newBuilder(application)

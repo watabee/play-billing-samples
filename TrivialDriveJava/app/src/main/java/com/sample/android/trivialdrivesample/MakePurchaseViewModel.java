@@ -59,6 +59,8 @@ public class MakePurchaseViewModel extends ViewModel {
         return tdr.canPurchase(sku);
     }
 
+    public LiveData<Boolean> isPurchased(String sku) { return tdr.isPurchased(sku); }
+
     /**
      * Starts a billing flow for purchasing gas.
      *

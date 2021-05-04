@@ -26,13 +26,13 @@ public class TrivialDriveApplication extends Application {
 
     // Container of objects shared across the whole app
     public class AppContainer {
-        GameStateModel gameStateModel = new GameStateModel(TrivialDriveApplication.this);
-        BillingDataSource billingDataSource = BillingDataSource.getInstance(
+        final GameStateModel gameStateModel = new GameStateModel(TrivialDriveApplication.this);
+        final BillingDataSource billingDataSource = BillingDataSource.getInstance(
                 TrivialDriveApplication.this,
                 TrivialDriveRepository.INAPP_SKUS,
                 TrivialDriveRepository.SUBSCRIPTION_SKUS,
                 TrivialDriveRepository.AUTO_CONSUME_SKUS);
-        public TrivialDriveRepository trivialDriveRepository = new TrivialDriveRepository(
+        final public TrivialDriveRepository trivialDriveRepository = new TrivialDriveRepository(
                 billingDataSource,
                 gameStateModel);
     }

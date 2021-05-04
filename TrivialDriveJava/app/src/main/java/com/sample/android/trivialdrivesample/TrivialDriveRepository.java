@@ -21,6 +21,7 @@ import android.util.Log;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
+import androidx.lifecycle.Observer;
 
 import com.sample.android.trivialdrivesample.billing.BillingDataSource;
 import com.sample.android.trivialdrivesample.db.GameStateModel;
@@ -110,24 +111,30 @@ public class TrivialDriveRepository {
     public void drive() {
         // We run this all on a background thread since we're not using a LiveData observable
         // to get the gas level and want to avoid doing database queries on the main thread.
-        driveExecutor.submit(() -> {
-            int gasLevel = gameStateModel.getCurrentGasTankLevel();
-            switch (gasLevel) {
-                case TrivialDriveRepository.GAS_TANK_INFINITE:
-                    // We never use gas in the tank if we have a subscription
-                    sendMessage(R.string.message_infinite_drive);
-                    break;
-                case TrivialDriveRepository.GAS_TANK_MIN:
-                    sendMessage(R.string.message_out_of_gas);
-                    break;
-                case TrivialDriveRepository.GAS_TANK_MIN + 1:
-                    gameStateModel.decrementGas(GAS_TANK_MIN);
-                    sendMessage(R.string.message_out_of_gas);
-                    break;
-                default:
-                    gameStateModel.decrementGas(GAS_TANK_MIN);
-                    sendMessage(R.string.message_you_drove);
-                    break;
+        final LiveData<Integer> gasTankLevelLiveData = gasTankLevel();
+        gasTankLevelLiveData.observeForever(
+                new Observer<Integer>() {
+            @Override
+            public void onChanged(Integer gasLevel) {
+                if ( null == gasLevel ) return;
+                switch (gasLevel) {
+                    case TrivialDriveRepository.GAS_TANK_INFINITE:
+                        // We never use gas in the tank if we have a subscription
+                        sendMessage(R.string.message_infinite_drive);
+                        break;
+                    case TrivialDriveRepository.GAS_TANK_MIN:
+                        sendMessage(R.string.message_out_of_gas);
+                        break;
+                    case TrivialDriveRepository.GAS_TANK_MIN + 1:
+                        gameStateModel.decrementGas(GAS_TANK_MIN);
+                        sendMessage(R.string.message_out_of_gas);
+                        break;
+                    default:
+                        gameStateModel.decrementGas(GAS_TANK_MIN);
+                        sendMessage(R.string.message_you_drove);
+                        break;
+                }
+                gasTankLevelLiveData.removeObserver(this);
             }
         });
     }
@@ -185,7 +192,7 @@ public class TrivialDriveRepository {
     public LiveData<Boolean> canPurchase(String sku) {
         switch (sku) {
             case SKU_GAS: {
-                final MediatorLiveData<Boolean> result = new MediatorLiveData<Boolean>();
+                final MediatorLiveData<Boolean> result = new MediatorLiveData<>();
                 final LiveData<Integer> gasTankLevel = gasTankLevel();
                 final LiveData<Boolean> canPurchaseSku = billingDataSource.canPurchase(sku);
                 result.addSource(gasTankLevel, level ->
@@ -205,16 +212,19 @@ public class TrivialDriveRepository {
             LiveData<Boolean> monthlySubscription,
             LiveData<Boolean> yearlySubscription
     ) {
-        boolean isMonthlySubscription =
-                monthlySubscription.getValue() == null ? false : monthlySubscription.getValue();
-        boolean isYearlySubscription =
-                yearlySubscription.getValue() == null ? false : yearlySubscription.getValue();
+        Boolean isMonthlySubscription = monthlySubscription.getValue();
+        Boolean isYearlySubscription = yearlySubscription.getValue();
+        if (
+            null == isMonthlySubscription ||
+            null == isYearlySubscription
+        ) return; // do not emit
+
         if (isMonthlySubscription || isYearlySubscription) {
             result.setValue(GAS_TANK_INFINITE);
         } else {
             Integer gasTankLevelValue = gasTankLevel.getValue();
             if (null == gasTankLevelValue) return;
-            result.setValue(gasTankLevelValue);
+                result.setValue(gasTankLevelValue);
         }
     }
 
@@ -266,7 +276,6 @@ public class TrivialDriveRepository {
 
     public final LiveData<Integer> getMessages() {
         return allMessages;
-
     }
 
     public final void sendMessage(int resId) {

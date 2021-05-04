@@ -58,6 +58,10 @@ class MakePurchaseViewModel(private val tdr: TrivialDriveRepository) : ViewModel
         return tdr.canPurchase(sku).asLiveData()
     }
 
+    fun isPurchased(sku: String): LiveData<Boolean> {
+        return tdr.isPurchased(sku).asLiveData()
+    }
+
     /**
      * Starts a billing flow for purchasing gas.
      * @param activity

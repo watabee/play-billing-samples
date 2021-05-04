@@ -23,10 +23,8 @@
 
     <string name="header_fuel_your_ride">Fuel Your Ride</string>
     <string name="header_go_premium">Go Premium</string>
-    <string name="header_subscribe">Subscribe</string>
+    <string name="header_subscribe"><a href="https://play.google.com/store/account/subscriptions">Subscribe</a></string>
 
-    <string name="content_description_app_loading_image">App loading image</string>
-    <string name="content_description_title_image">80\'s Video Game Style Car Logo</string>
     <string name="content_description_gas_gauge_indicator">Gas gauge indicator</string>
     <string name="content_description_free_vs_premium_indicator">Free or Premium Image Indicator</string>
 

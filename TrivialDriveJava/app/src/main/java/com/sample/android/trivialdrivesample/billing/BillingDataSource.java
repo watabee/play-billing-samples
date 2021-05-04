@@ -325,24 +325,24 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
      * @return title of the requested SKU as an observable LiveData<String>
      */
     public final LiveData<String> getSkuTitle(String sku) {
-        LiveData<SkuDetails> skuTitle = skuDetailsLiveDataMap.get(sku);
-        assert skuTitle != null;
-        return Transformations.map(skuTitle, SkuDetails::getTitle);
+        LiveData<SkuDetails> skuDetailsLiveData = skuDetailsLiveDataMap.get(sku);
+        assert skuDetailsLiveData != null;
+        return Transformations.map(skuDetailsLiveData, SkuDetails::getTitle);
     }
 
     // There's lots of information in SkuDetails, but our app only needs a few things, since our
     // goods never go on sale, have introductory pricing, etc.
 
     public final LiveData<String> getSkuPrice(String sku) {
-        LiveData<SkuDetails> skuPrice = skuDetailsLiveDataMap.get(sku);
-        assert skuPrice != null;
-        return Transformations.map(skuPrice, SkuDetails::getPrice);
+        LiveData<SkuDetails> skuDetailsLiveData = skuDetailsLiveDataMap.get(sku);
+        assert skuDetailsLiveData != null;
+        return Transformations.map(skuDetailsLiveData, SkuDetails::getPrice);
     }
 
     public final LiveData<String> getSkuDescription(String sku) {
-        LiveData<SkuDetails> skuDescription = skuDetailsLiveDataMap.get(sku);
-        assert skuDescription != null;
-        return Transformations.map(skuDescription, SkuDetails::getDescription);
+        LiveData<SkuDetails> skuDetailsLiveData = skuDetailsLiveDataMap.get(sku);
+        assert skuDetailsLiveData != null;
+        return Transformations.map(skuDetailsLiveData, SkuDetails::getDescription);
     }
 
     /**
