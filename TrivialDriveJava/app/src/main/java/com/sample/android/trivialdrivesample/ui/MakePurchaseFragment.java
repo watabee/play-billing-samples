@@ -150,7 +150,9 @@ public class MakePurchaseFragment extends Fragment {
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             result.setValue(titleSpannable);
         } else {
-            result.setValue(skuTitle);
+            // empty SpannableString needs to be used to clear spannables
+            SpannableString titleSpannable = new SpannableString(skuTitle);
+            result.setValue(titleSpannable);
         }
     }
 
