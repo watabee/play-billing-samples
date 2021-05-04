@@ -53,6 +53,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
 }
 
 dependencies {
@@ -67,10 +70,11 @@ dependencies {
 
     implementation "androidx.room:room-runtime:$version_room"
     implementation "androidx.room:room-ktx:$version_room"
+    implementation "androidx.lifecycle:lifecycle-process:$version_lifecycle"
     kapt "androidx.room:room-compiler:$version_room"
 
-    implementation "androidx.navigation:navigation-fragment:$version_navigation"
-    implementation "androidx.navigation:navigation-ui:$version_navigation"
+    implementation "androidx.navigation:navigation-fragment-ktx:$version_navigation"
+    implementation "androidx.navigation:navigation-ui-ktx:$version_navigation"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$version_kotlin"
     implementation "androidx.core:core-ktx:$version_core_ktx"
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$version_lifecycle"

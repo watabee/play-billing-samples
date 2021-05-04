@@ -16,6 +16,9 @@
 package com.sample.android.trivialdrivesample.ui;
 
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.URLSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +28,7 @@ import androidx.annotation.Nullable;
 import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -46,6 +50,7 @@ import java.util.List;
  */
 public class MakePurchaseFragment extends Fragment {
     String TAG = "MakePurchaseFragment";
+    private static final String PLAY_STORE_SUBSCRIPTION_DEEPLINK_URL = "https://play.google.com/store/account/subscriptions?sku=%s&package=%s";
 
     private MakePurchaseViewModel makePurchaseViewModel;
     private FragmentMakePurchaseBinding binding;
@@ -57,19 +62,19 @@ public class MakePurchaseFragment extends Fragment {
      */
     void makeInventoryList() {
         inventoryList.add(new MakePurchaseAdapter.Item(
-                getString(R.string.header_fuel_your_ride), MakePurchaseAdapter.VIEW_TYPE_HEADER
+                getText(R.string.header_fuel_your_ride), MakePurchaseAdapter.VIEW_TYPE_HEADER
         ));
         inventoryList.add(new MakePurchaseAdapter.Item(
                 TrivialDriveRepository.SKU_GAS, MakePurchaseAdapter.VIEW_TYPE_ITEM
         ));
         inventoryList.add(new MakePurchaseAdapter.Item(
-                getString(R.string.header_go_premium), MakePurchaseAdapter.VIEW_TYPE_HEADER
+                getText(R.string.header_go_premium), MakePurchaseAdapter.VIEW_TYPE_HEADER
         ));
         inventoryList.add(new MakePurchaseAdapter.Item(
                 TrivialDriveRepository.SKU_PREMIUM, MakePurchaseAdapter.VIEW_TYPE_ITEM
         ));
         inventoryList.add(new MakePurchaseAdapter.Item(
-                getString(R.string.header_subscribe), MakePurchaseAdapter.VIEW_TYPE_HEADER
+                getText(R.string.header_subscribe), MakePurchaseAdapter.VIEW_TYPE_HEADER
         ));
         inventoryList.add(new MakePurchaseAdapter.Item(
                 TrivialDriveRepository.SKU_INFINITE_GAS_MONTHLY, MakePurchaseAdapter.VIEW_TYPE_ITEM
@@ -118,5 +123,45 @@ public class MakePurchaseFragment extends Fragment {
 
     public LiveData<Boolean> canBuySku(String sku) {
         return makePurchaseViewModel.canBuySku(sku);
+    }
+
+    private void combineTitleSkuAndIsPurchasedData(
+            MediatorLiveData<CharSequence> result,
+            LiveData<String> skuTitleLiveData,
+            LiveData<Boolean> isPurchasedLiveData,
+            @NonNull String sku
+    ) {
+        String skuTitle = skuTitleLiveData.getValue();
+        Boolean isPurchased = isPurchasedLiveData.getValue();
+        // don't emit until we have all of our data
+        if (null == skuTitle || null == isPurchased) {
+            return;
+        }
+        if ( isPurchased && ( sku.equals(TrivialDriveRepository.SKU_INFINITE_GAS_MONTHLY) ||
+                sku.equals(TrivialDriveRepository.SKU_INFINITE_GAS_YEARLY))) {
+            // add URL to the Play store to allow user to unsubscribe if the user already has
+            // purchased a subscription
+            SpannableString titleSpannable = new SpannableString(skuTitle);
+            titleSpannable.setSpan(new URLSpan(String.format(
+                    PLAY_STORE_SUBSCRIPTION_DEEPLINK_URL,
+                    sku,
+                    getContext().getPackageName())), 0, titleSpannable.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            result.setValue(titleSpannable);
+        } else {
+            result.setValue(skuTitle);
+        }
+    }
+
+    public LiveData<CharSequence> skuTitle(final @NonNull String sku) {
+        MakePurchaseViewModel.SkuDetails skuDetails = makePurchaseViewModel.getSkuDetails(sku);
+        final LiveData<String> skuTitleLiveData = skuDetails.getTitle();
+        final LiveData<Boolean> isPurchasedLiveData = makePurchaseViewModel.isPurchased(sku);
+        final MediatorLiveData<CharSequence> result = new MediatorLiveData<>();
+        result.addSource(skuTitleLiveData, title ->
+                combineTitleSkuAndIsPurchasedData(result, skuTitleLiveData, isPurchasedLiveData, sku ));
+        result.addSource(isPurchasedLiveData, isPurchased ->
+                combineTitleSkuAndIsPurchasedData(result, skuTitleLiveData, isPurchasedLiveData, sku ));
+        return result;
     }
 }

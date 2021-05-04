@@ -15,6 +15,7 @@
  */
 package com.sample.android.trivialdrivesample.ui;
 
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -104,13 +105,15 @@ public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapte
             switch (item.viewType) {
                 case VIEW_TYPE_HEADER:
                     inventoryHeaderBinding.headerTitle.setText(item.getTitleOrSku());
+                    inventoryHeaderBinding.headerTitle.setMovementMethod(LinkMovementMethod.getInstance());
                     inventoryHeaderBinding.setLifecycleOwner(makePurchaseFragment);
                     inventoryHeaderBinding.executePendingBindings();
                     break;
                 default:
-                    inventoryItemBinding.setSku(item.getTitleOrSku());
+                    inventoryItemBinding.setSku(item.getTitleOrSku().toString());
                     inventoryItemBinding.setSkuDetails(
-                            makePurchaseViewModel.getSkuDetails(item.getTitleOrSku()));
+                            makePurchaseViewModel.getSkuDetails(item.getTitleOrSku().toString()));
+                    inventoryItemBinding.skuTitle.setMovementMethod(LinkMovementMethod.getInstance());
                     inventoryItemBinding.setMakePurchaseFragment(makePurchaseFragment);
                     inventoryItemBinding.setLifecycleOwner(makePurchaseFragment);
                     inventoryItemBinding.executePendingBindings();
@@ -124,13 +127,13 @@ public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapte
      * the title of a header or a reference to a SKU, depending on what the type of the view is.
      */
     static class Item {
-        public Item(@NonNull String titleOrSku, int viewType) {
+        public Item(@NonNull CharSequence titleOrSku, int viewType) {
             this.titleOrSku = titleOrSku;
             this.viewType = viewType;
         }
 
         public @NonNull
-        String getTitleOrSku() {
+        CharSequence getTitleOrSku() {
             return titleOrSku;
         }
 
@@ -139,7 +142,7 @@ public class MakePurchaseAdapter extends RecyclerView.Adapter<MakePurchaseAdapte
         }
 
         private final @NonNull
-        String titleOrSku;
+        CharSequence titleOrSku;
         private final int viewType;
     }
 }

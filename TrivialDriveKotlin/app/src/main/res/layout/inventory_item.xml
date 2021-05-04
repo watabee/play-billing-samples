@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <!--
     Copyright (C) 2021 Google Inc. All Rights Reserved.
 
@@ -56,8 +55,8 @@
         app:cardCornerRadius="@dimen/cardview_corner_radius"
         app:contentPadding="@dimen/cardview_padding">
 
-    <!-- Note that several of the text views contain debug information if the SKU isn't found to
-         make the app configuration process in Google Play more comprehensible. -->
+        <!-- Note that several of the text views contain debug information if the SKU isn't found to
+             make the app configuration process in Google Play more comprehensible. -->
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -78,9 +77,9 @@
                 android:id="@+id/sku_title"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="16dp"
+                android:layout_marginEnd="@dimen/margin_std_2x"
                 android:duplicateParentState="true"
-                android:text="@{skuDetails.title == null ? @string/debug_title_not_found(sku) : skuDetails.title}"
+                android:text="@{makePurchaseFragment.skuTitle(sku) == null ? @string/debug_title_not_found(sku) : makePurchaseFragment.skuTitle(sku)}"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toStartOf="@id/sku_price"
                 app:layout_constraintHorizontal_bias="0.0"
@@ -92,7 +91,7 @@
                 android:id="@+id/sku_image"
                 android:layout_width="wrap_content"
                 android:layout_height="68dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/margin_std_half"
                 android:adjustViewBounds="true"
                 android:duplicateParentState="true"
                 android:maxWidth="126dp"
@@ -107,9 +106,9 @@
                 android:id="@+id/sku_description"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="@dimen/margin_std_half"
-                android:layout_marginTop="8dp"
-                android:layout_marginEnd="16dp"
+                android:layout_marginStart="@dimen/margin_std_half"
+                android:layout_marginTop="@dimen/margin_std_half"
+                android:layout_marginEnd="@dimen/margin_std"
                 android:duplicateParentState="true"
                 android:text="@{skuDetails.description == null ? @string/debug_description_not_found : skuDetails.description}"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -119,7 +118,7 @@
                 tools:text="This is a description placeholder, telling your users what the item will do for them." />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.cardview.widget.CardView>
+    </androidx.cardview.widget.CardView>
 </layout>
 
 
