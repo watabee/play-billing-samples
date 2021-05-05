@@ -28,13 +28,12 @@ android {
                                       "$projectDir/schemas".toString()]
             }
         }
-        if (localProperties['base64EncodedPublicKey']) {
-            buildConfigField("String", "BASE64_ENCODED_PUBLIC_KEY", "\"" + localProperties['base64EncodedPublicKey'] + "\"")
-        } else {
-            throw new GradleException('base64EncodedPublicKey must be set for signature verification.' +
-                                      'You can add it to local.properties once you have gotten it from Play.' +
-                                      'Example: base64EncodedPublicKey=[key value]')
+        if (!localProperties['base64EncodedPublicKey']) {
+            logger.warn('base64EncodedPublicKey must be set for signature verification. ' +
+                    'You can add it to local.properties once you have gotten it from Play. ' +
+                    'Example: base64EncodedPublicKey=[key value]')
         }
+        buildConfigField("String", "BASE64_ENCODED_PUBLIC_KEY", "\"" + localProperties['base64EncodedPublicKey'] + "\"")
     }
     buildTypes {
         release {
