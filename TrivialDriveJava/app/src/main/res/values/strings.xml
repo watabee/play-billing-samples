@@ -43,4 +43,11 @@
     <string name="debug_description_not_found">Make sure that you have uploaded an APK to the Google Play developer console, that the correct SKUs have been created for the APK, and the signed-in account has been enabled for testing.</string>
 
     <string name="error_unable_to_make_purchase">Unable to make purchase.</string>
+
+    <string name="alert_error_message_encoded_public_key_not_set">base64EncodedPublicKey
+        <b>must</b> be set for signature verification. You can add it to <b>local.properties</b>
+        once you have gotten it from Play.\n\n<b>Example: <tt>base64EncodedPublicKey=[key value]</tt>
+        </b></string>
+    <string name="alert_error_title_encoded_public_key_not_set">Public Key Not Set</string>
+
 </resources>

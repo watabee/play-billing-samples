@@ -16,15 +16,20 @@
 
 package com.sample.android.trivialdrivesample.ui;
 
+import android.app.Dialog;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.databinding.DataBindingUtil;
+import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -32,6 +37,7 @@ import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.sample.android.trivialdrivesample.BuildConfig;
 import com.sample.android.trivialdrivesample.MainActivityViewModel;
 import com.sample.android.trivialdrivesample.R;
 import com.sample.android.trivialdrivesample.TrivialDriveApplication;
@@ -44,6 +50,7 @@ import com.sample.android.trivialdrivesample.databinding.ActivityMainBinding;
 public class MainActivity extends AppCompatActivity{
     private MainActivityViewModel mainActivityViewModel;
     private ActivityMainBinding activityMainBinding;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,6 +83,15 @@ public class MainActivity extends AppCompatActivity{
         });
         // Allows billing to refresh purchases during onResume
         getLifecycle().addObserver(mainActivityViewModel.getBillingLifecycleObserver());
+
+        // A helpful hint to prevent confusion when billing transactions silently fail
+        if ( BuildConfig.BASE64_ENCODED_PUBLIC_KEY.equals("null")) {
+            if ( getSupportFragmentManager()
+                    .findFragmentByTag(PublicKeyNotSetDialog.DIALOG_TAG) == null ) {
+                new PublicKeyNotSetDialog()
+                        .show(getSupportFragmentManager(), PublicKeyNotSetDialog.DIALOG_TAG);
+            }
+        }
     }
 
     @Override
@@ -95,5 +111,21 @@ public class MainActivity extends AppCompatActivity{
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public static class PublicKeyNotSetDialog extends DialogFragment {
+        static final String DIALOG_TAG = "PublicKeyNotSetDialog";
+        @NonNull
+        @Override
+        public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+            return new AlertDialog.Builder(requireContext())
+                    .setTitle(R.string.alert_error_title_encoded_public_key_not_set)
+                    .setMessage(
+                            R.string.alert_error_message_encoded_public_key_not_set)
+                    .setPositiveButton(getString(android.R.string.ok),
+                            (dialog, which) -> {
+                            })
+                    .create();
+        }
     }
 }
