@@ -1,7 +1,11 @@
 apply plugin: 'com.android.application'
 
 def localProperties = new Properties()
-localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+try {
+    localProperties.load(new FileInputStream(rootProject.file("local.properties")))
+} catch (Exception e) {
+    logger.warn("No Local Properties File Found!")
+}
 
 android {
     signingConfigs {
