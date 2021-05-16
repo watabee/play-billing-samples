@@ -16,6 +16,13 @@
 
 package com.sample.android.classytaxijava.ui;
 
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,24 +34,18 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.viewpager.widget.ViewPager;
 
-import android.content.Intent;
-import android.net.Uri;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.Purchase;
-import com.sample.android.classytaxijava.Constants;
-import com.sample.android.classytaxijava.R;
-import com.sample.android.classytaxijava.SubApp;
-import com.sample.android.classytaxijava.billing.BillingClientLifecycle;
+
 import com.firebase.ui.auth.AuthUI;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.tabs.TabLayout;
 import com.google.firebase.auth.FirebaseUser;
+import com.sample.android.classytaxijava.Constants;
+import com.sample.android.classytaxijava.R;
+import com.sample.android.classytaxijava.SubApp;
+import com.sample.android.classytaxijava.billing.BillingClientLifecycle;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -167,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void registerPurchases(List<Purchase> purchaseList) {
         for (Purchase purchase : purchaseList) {
-            String sku = purchase.getSku();
+            String sku = purchase.getSkus().get(0);
             String purchaseToken = purchase.getPurchaseToken();
             Log.d(TAG, "Register purchase with sku: " + sku + ", token: " + purchaseToken);
             subscriptionViewModel.registerSubscription(sku, purchaseToken);

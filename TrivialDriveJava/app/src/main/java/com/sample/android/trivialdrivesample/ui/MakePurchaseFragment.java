@@ -111,9 +111,7 @@ public class MakePurchaseFragment extends Fragment {
     }
 
     public void makePurchase(String sku) {
-        if (!makePurchaseViewModel.buySku(getActivity(), sku)) {
-            makePurchaseViewModel.sendMessage(R.string.error_unable_to_make_purchase);
-        }
+        makePurchaseViewModel.buySku(getActivity(), sku);
     }
 
     @Override

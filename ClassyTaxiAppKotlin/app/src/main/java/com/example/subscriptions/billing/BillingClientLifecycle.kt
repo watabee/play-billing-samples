@@ -29,6 +29,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
@@ -39,7 +40,7 @@ import com.example.subscriptions.ui.SingleLiveEvent
 class BillingClientLifecycle private constructor(
         private val app: Application
 ) : LifecycleObserver, PurchasesUpdatedListener, BillingClientStateListener,
-        SkuDetailsResponseListener {
+        SkuDetailsResponseListener, PurchasesResponseListener {
 
     /**
      * The purchase event is observable. Only one oberver will be notified.
@@ -133,7 +134,7 @@ class BillingClientLifecycle private constructor(
                 .setType(BillingClient.SkuType.SUBS)
                 .setSkusList(LIST_OF_SKUS)
                 .build()
-        params?.let { skuDetailsParams ->
+        params.let { skuDetailsParams ->
             Log.i(TAG, "querySkuDetailsAsync")
             billingClient.querySkuDetailsAsync(skuDetailsParams, this)
         }
@@ -208,18 +209,15 @@ class BillingClientLifecycle private constructor(
             Log.e(TAG, "queryPurchases: BillingClient is not ready")
         }
         Log.d(TAG, "queryPurchases: SUBS")
-        val result = billingClient.queryPurchases(BillingClient.SkuType.SUBS)
-        if (result == null) {
-            Log.i(TAG, "queryPurchases: null purchase result")
-            processPurchases(null)
-        } else {
-            if (result.purchasesList == null) {
-                Log.i(TAG, "queryPurchases: null purchase list")
-                processPurchases(null)
-            } else {
-                processPurchases(result.purchasesList)
-            }
-        }
+        billingClient.queryPurchasesAsync(BillingClient.SkuType.SUBS, this);
+    }
+
+    /**
+     * Callback from the billing library when queryPurchasesAsync is called.
+     */
+    override fun onQueryPurchasesResponse(billingResult: BillingResult,
+                                          purchasesList: MutableList<Purchase>) {
+        processPurchases(purchasesList);
     }
 
     /**
@@ -313,9 +311,6 @@ class BillingClientLifecycle private constructor(
      * Launching the UI to make a purchase requires a reference to the Activity.
      */
     fun launchBillingFlow(activity: Activity, params: BillingFlowParams): Int {
-        val sku = params.sku
-        val oldSku = params.oldSku
-        Log.i(TAG, "launchBillingFlow: sku: $sku, oldSku: $oldSku")
         if (!billingClient.isReady) {
             Log.e(TAG, "launchBillingFlow: BillingClient is not ready")
         }
@@ -358,5 +353,4 @@ class BillingClientLifecycle private constructor(
             Log.d(TAG, "acknowledgePurchase: $responseCode $debugMessage")
         }
     }
-
 }

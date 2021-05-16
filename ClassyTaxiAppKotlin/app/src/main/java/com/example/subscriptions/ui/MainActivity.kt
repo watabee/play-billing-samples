@@ -146,7 +146,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun registerPurchases(purchaseList: List<Purchase>) {
         for (purchase in purchaseList) {
-            val sku = purchase.sku
+            val sku = purchase.skus[0]
             val purchaseToken = purchase.purchaseToken
             Log.d(TAG, "Register purchase with sku: $sku, token: $purchaseToken")
             subscriptionViewModel.registerSubscription(

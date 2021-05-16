@@ -43,7 +43,7 @@ fun subscriptionForSku(subscriptions: List<SubscriptionStatus>?, sku: String): S
 fun purchaseForSku(purchases: List<Purchase>?, sku: String): Purchase? {
     purchases?.let {
         for (purchase in it) {
-            if (purchase.sku == sku) {
+            if (purchase.skus[0] == sku) {
                 return purchase
             } else {
                 // Do nothing.

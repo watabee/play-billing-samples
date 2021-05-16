@@ -1,7 +1,7 @@
 Trivial Drive
-============
+=============
 
-Sample for Google Play Billing Library version 3
+Sample for Google Play Billing Library version 4
 
 Introduction
 ------------
@@ -35,7 +35,7 @@ Screenshots
 Getting Started
 ---------------
 
-This sample won't build without you supplying a base64EncodedPublicKey in your local.properties,
+This sample will warn you if you don't supply a base64EncodedPublicKey in your local.properties,
 which is used for purchase signature validation. If you just want to run the sample, you can put 
 anything in there to get past the Gradle build check, but in order to get the rest of the sample
 to function, you need to create an application instance in the Google Play Developer Console and
@@ -139,3 +139,4 @@ CHANGELOG
    2015-03-13: Updated to new dev console and added yearly subscriptions
    2015-08-27: Ported to gradle and prepped for transitioning to GitHub
    2021-04-28: Rewritten and updated to support Google Play Billing Library V3
+   2021-05-15: Updated to support Google Play Billing Library V4

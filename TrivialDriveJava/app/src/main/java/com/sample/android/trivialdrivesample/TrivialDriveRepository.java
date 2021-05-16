@@ -27,6 +27,7 @@ import com.sample.android.trivialdrivesample.billing.BillingDataSource;
 import com.sample.android.trivialdrivesample.db.GameStateModel;
 import com.sample.android.trivialdrivesample.ui.SingleMediatorLiveEvent;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -68,9 +69,11 @@ public class TrivialDriveRepository {
         setupMessagesSingleMediatorLiveEvent();
 
         // Since both are tied to application lifecycle
-        billingDataSource.observeConsumedPurchases().observeForever(sku -> {
-            if (sku.equals(SKU_GAS)) {
-                gameStateModel.incrementGas(GAS_TANK_MAX);
+        billingDataSource.observeConsumedPurchases().observeForever(skuList -> {
+            for ( String sku: skuList ) {
+                if (sku.equals(SKU_GAS)) {
+                    gameStateModel.incrementGas(GAS_TANK_MAX);
+                }
             }
         });
     }
@@ -83,10 +86,12 @@ public class TrivialDriveRepository {
      * strings into useful String messages.
      */
     void setupMessagesSingleMediatorLiveEvent() {
-        final LiveData<String> billingMessages = billingDataSource.observeNewPurchases();
+        final LiveData<List<String>> billingMessages = billingDataSource.observeNewPurchases();
         allMessages.addSource(gameMessages, allMessages::setValue);
         allMessages.addSource(billingMessages,
-                s -> {
+                stringList -> {
+            // TODO: Handle multi-line purchases better
+            for (String s: stringList) {
                     switch (s) {
                         case SKU_GAS:
                             allMessages.setValue(R.string.message_more_gas_acquired);
@@ -98,11 +103,12 @@ public class TrivialDriveRepository {
                         case SKU_INFINITE_GAS_YEARLY:
                             // this makes sure that upgraded and downgraded subscriptions are
                             // reflected correctly in the app UI
-                            billingDataSource.refreshPurchases();
+                            billingDataSource.refreshPurchasesAsync();
                             allMessages.setValue(R.string.message_subscribed);
                             break;
                     }
-                });
+                }
+        });
     }
 
     /**
@@ -145,7 +151,7 @@ public class TrivialDriveRepository {
      * @param activity Needed by billing library to start the Google Play billing activity
      * @param sku the product ID to purchase
      */
-    public boolean buySku(Activity activity, String sku) {
+    public void buySku(Activity activity, String sku) {
         String oldSku = null;
         switch (sku) {
             case SKU_INFINITE_GAS_MONTHLY:
@@ -155,7 +161,11 @@ public class TrivialDriveRepository {
                 oldSku = SKU_INFINITE_GAS_MONTHLY;
                 break;
         }
-        return billingDataSource.launchBillingFlow(activity, sku, oldSku);
+        if ( null != oldSku ) {
+            billingDataSource.launchBillingFlow(activity, sku, oldSku);
+        } else {
+            billingDataSource.launchBillingFlow(activity, sku);
+        }
     }
 
     /**
@@ -253,7 +263,7 @@ public class TrivialDriveRepository {
     }
 
     public final void refreshPurchases() {
-        billingDataSource.refreshPurchases();
+        billingDataSource.refreshPurchasesAsync();
     }
 
     public final LifecycleObserver getBillingLifecycleObserver() {

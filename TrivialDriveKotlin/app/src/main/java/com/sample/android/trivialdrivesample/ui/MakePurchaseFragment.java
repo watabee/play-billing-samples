@@ -109,10 +109,8 @@ public class MakePurchaseFragment extends Fragment {
         binding.inappInventory.setAdapter(new MakePurchaseAdapter(inventoryList, makePurchaseViewModel, this));
     }
 
-    public void makePurchase(String sku) {
-        if (!makePurchaseViewModel.buySku(getActivity(), sku)) {
-            makePurchaseViewModel.sendMessage(R.string.error_unable_to_make_purchase);
-        }
+    public void makePurchase(@NonNull String sku) {
+        makePurchaseViewModel.buySku(getActivity(), sku);
     }
 
     @Override

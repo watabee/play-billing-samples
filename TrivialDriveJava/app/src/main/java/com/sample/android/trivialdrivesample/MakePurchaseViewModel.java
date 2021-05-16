@@ -65,10 +65,9 @@ public class MakePurchaseViewModel extends ViewModel {
      * Starts a billing flow for purchasing gas.
      *
      * @param activity needed by Billing library to launch the purchase Activity
-     * @return whether or not we were able to start the flow
      */
-    public boolean buySku(Activity activity, String sku) {
-        return tdr.buySku(activity, sku);
+    public void buySku(Activity activity, String sku) {
+        tdr.buySku(activity, sku);
     }
 
     public LiveData<Boolean> getBillingFlowInProcess() {
