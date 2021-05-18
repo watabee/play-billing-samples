@@ -125,7 +125,7 @@ class BillingDataSource private constructor(
 
     // Flows that are mostly maintained so they can be transformed into observables.
     private val skuStateMap: MutableMap<String, MutableStateFlow<SkuState>> = HashMap()
-    private val skuDetailsMap: MutableMap<String, MutableStateFlow<MakePurchaseViewModel.SkuDetails?>> = HashMap()
+    private val skuDetailsMap: MutableMap<String, MutableStateFlow<SkuDetails?>> = HashMap()
 
     // Observables that are used to communicate state.
     private val purchaseConsumptionInProcess: MutableSet<Purchase> = HashSet()
@@ -182,7 +182,7 @@ class BillingDataSource private constructor(
     private fun addSkuFlows(skuList: List<String>?) {
         for (sku in skuList!!) {
             val skuState = MutableStateFlow(SkuState.SKU_STATE_UNPURCHASED)
-            val details = MutableStateFlow<MakePurchaseViewModel.SkuDetails?>(null)
+            val details = MutableStateFlow<SkuDetails?>(null)
             details.subscriptionCount.map { count -> count > 0 } // map count into active/inactive flag
                 .distinctUntilChanged() // only react to true<->false changes
                 .onEach { isActive -> // configure an action
