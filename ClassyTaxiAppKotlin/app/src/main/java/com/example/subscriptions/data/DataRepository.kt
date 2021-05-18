@@ -187,7 +187,7 @@ class DataRepository private constructor(
                         // another user. It should be included in the output if the SKU
                         // and purchase token match their previous value.
                         for (purchase in purchases) {
-                            if (purchase.sku == oldSubscription.sku &&
+                            if (purchase.skus[0] == oldSubscription.sku &&
                                     purchase.purchaseToken == oldSubscription.purchaseToken) {
                                 // The old subscription that was already owned subscription should
                                 // be added to the new subscriptions.
@@ -228,7 +228,7 @@ class DataRepository private constructor(
                 var purchaseToken = subscription.purchaseToken
                 purchases?.let {
                     for (purchase in it) {
-                        if (subscription.sku == purchase.sku) {
+                        if (subscription.sku == purchase.skus[0]) {
                             isLocalPurchase = true
                             purchaseToken = purchase.purchaseToken
                         }

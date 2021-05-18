@@ -49,7 +49,7 @@ public class BillingUtilities {
     public static Purchase getPurchaseForSku(@Nullable List<Purchase> purchases, String sku) {
         if (purchases != null) {
             for (Purchase purchase : purchases) {
-                if (sku.equals(purchase.getSku())) {
+                if (sku.equals(purchase.getSkus().get(0))) {
                     return purchase;
                 }
             }

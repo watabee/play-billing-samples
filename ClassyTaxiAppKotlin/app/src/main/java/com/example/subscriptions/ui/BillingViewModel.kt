@@ -235,7 +235,10 @@ class BillingViewModel(application: Application) : AndroidViewModel(application)
         // Only set the old SKU parameter if the old SKU is already owned.
         if (oldSkuToBeReplaced != null && oldSkuToBeReplaced != sku) {
             purchaseForSku(purchases.value, oldSkuToBeReplaced)?.apply {
-                billingBuilder.setOldSku(oldSkuToBeReplaced, purchaseToken)
+                billingBuilder.setSubscriptionUpdateParams(
+                        BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                        .setOldSkuPurchaseToken(purchaseToken)
+                        .build())
             }
         }
         val billingParams = billingBuilder.build()

@@ -254,7 +254,10 @@ public class BillingViewModel extends AndroidViewModel {
             if (oldSkuToBeReplaced != null && !oldSkuToBeReplaced.equals(sku)) {
                 Purchase oldPurchase = BillingUtilities
                         .getPurchaseForSku(purchases.getValue(), oldSkuToBeReplaced);
-                billingBuilder.setOldSku(oldSkuToBeReplaced, oldPurchase.getPurchaseToken());
+                billingBuilder.setSubscriptionUpdateParams(
+                        BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                                .setOldSkuPurchaseToken(oldPurchase.getPurchaseToken())
+                                .build());
             }
 
             BillingFlowParams billingParams = billingBuilder.build();

@@ -1,13 +1,13 @@
-Trivial Drive
-============
+Trivial Drive (Kotlin)
+======================
 
-Sample for Google Play Billing Library version 3
+Sample for Google Play Billing Library version 4
 
 Introduction
 ------------
 
 This sample is provided to demonstrate using the Google Play Billing Library
-for in-app items and simple subscriptions. To read more visit 
+with Billing KTX for in-app items and simple subscriptions. To read more visit 
 https://developer.android.com/google/play/billing/index.html
 
 This game is a simple "driving" game where the player can buy gas
@@ -35,7 +35,7 @@ Screenshots
 Getting Started
 ---------------
 
-This sample won't build without you supplying a base64EncodedPublicKey in your local.properties,
+This sample will warn you if you don't supply a base64EncodedPublicKey in your local.properties,
 which is used for purchase signature validation. If you just want to run the sample, you can put 
 anything in there to get past the Gradle build check, but in order to get the rest of the sample
 to function, you need to create an application instance in the Google Play Developer Console and

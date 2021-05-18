@@ -67,8 +67,8 @@ class MakePurchaseViewModel(private val tdr: TrivialDriveRepository) : ViewModel
      * @param activity
      * @return whether or not we were able to start the flow
      */
-    fun buySku(activity: Activity?, sku: String?): Boolean {
-        return tdr.buySku(activity!!, sku!!)
+    fun buySku(activity: Activity, sku: String) {
+        tdr.buySku(activity, sku)
     }
 
     val billingFlowInProcess: LiveData<Boolean>

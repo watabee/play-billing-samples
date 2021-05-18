@@ -101,6 +101,7 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
     private static final long SKU_DETAILS_REQUERY_TIME = 1000L * 60L * 60L * 4L; // 4 hours
     private static final Handler handler = new Handler(Looper.getMainLooper());
     private static volatile BillingDataSource sInstance;
+    private boolean billingSetupComplete = false;
     // Billing client, connection, cached data
     private final BillingClient billingClient;
     // known SKUs (used to query sku data and validate responses)
@@ -112,9 +113,9 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
     final private Map<String, MutableLiveData<SkuState>> skuStateMap = new HashMap<>();
     final private Map<String, MutableLiveData<SkuDetails>> skuDetailsLiveDataMap = new HashMap<>();
     // Observables that are used to communicate state.
-    final private Set<String> purchaseConsumptionInProcess = new HashSet<>();
-    final private SingleMediatorLiveEvent<String> newPurchase = new SingleMediatorLiveEvent<>();
-    final private SingleMediatorLiveEvent<String> purchaseConsumed =
+    final private Set<Purchase> purchaseConsumptionInProcess = new HashSet<>();
+    final private SingleMediatorLiveEvent<List<String>> newPurchase = new SingleMediatorLiveEvent<>();
+    final private SingleMediatorLiveEvent<List<String>> purchaseConsumed =
             new SingleMediatorLiveEvent<>();
     final private MutableLiveData<Boolean> billingFlowInProcess = new MutableLiveData<>();
     // how long before the data source tries to reconnect to Google play
@@ -178,8 +179,9 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
                 // This doesn't mean that your app is set up correctly in the console -- it just
                 // means that you have a connection to the Billing service.
                 reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS;
+                billingSetupComplete = true;
                 querySkuDetailsAsync();
-                refreshPurchases();
+                refreshPurchasesAsync();
                 break;
             default:
                 retryBillingServiceConnectionWithExponentialBackoff();
@@ -193,6 +195,7 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
      */
     @Override
     public void onBillingServiceDisconnected() {
+        billingSetupComplete = false;
         retryBillingServiceConnectionWithExponentialBackoff();
     }
 
@@ -250,7 +253,7 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
      *
      * @return LiveData that contains the sku of the new purchase.
      */
-    public final LiveData<String> observeNewPurchases() {
+    public final LiveData<List<String>> observeNewPurchases() {
         return newPurchase;
     }
 
@@ -260,7 +263,7 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
      *
      * @return LiveData that contains the sku of the consumed purchase.
      */
-    public final LiveData<String> observeConsumedPurchases() {
+    public final LiveData<List<String>> observeConsumedPurchases() {
         return purchaseConsumed;
     }
 
@@ -344,7 +347,7 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
         assert skuDetailsLiveData != null;
         return Transformations.map(skuDetailsLiveData, SkuDetails::getDescription);
     }
-
+    
     /**
      * Receives the result from {@link #querySkuDetailsAsync()}}.
      * <p>
@@ -423,26 +426,30 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
     }
 
     /*
-        GPBL v3 now queries purchases synchronously, simplifying this flow. This only gets active
+        GPBL v4 now queries purchases asynchronously. This only gets active
         purchases.
      */
-    public void refreshPurchases() {
-        Log.d(TAG, "Refreshing purchases.");
-        Purchase.PurchasesResult pr = billingClient.queryPurchases(BillingClient.SkuType.INAPP);
-        BillingResult br = pr.getBillingResult();
-        if (br.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-            Log.e(TAG, "Problem getting purchases: " + br.getDebugMessage());
-        } else {
-            processPurchaseList(pr.getPurchasesList(), knownInappSKUs);
-        }
-        pr = billingClient.queryPurchases(BillingClient.SkuType.SUBS);
-        br = pr.getBillingResult();
-        if (br.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-            Log.e(TAG, "Problem getting subscriptions: " + br.getDebugMessage());
-        } else {
-            processPurchaseList(pr.getPurchasesList(), knownSubscriptionSKUs);
-        }
-        Log.d(TAG, "Refreshing purchases finished.");
+    public void refreshPurchasesAsync() {
+        billingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP,
+                (billingResult, list) -> {
+                    if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                        Log.e(TAG, "Problem getting purchases: " +
+                                billingResult.getDebugMessage());
+                    } else {
+                        processPurchaseList(list, knownInappSKUs);
+                    }
+                });
+        billingClient.queryPurchasesAsync(BillingClient.SkuType.SUBS,
+                (billingResult, list) -> {
+                    if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                        Log.e(TAG, "Problem getting subscriptions: " +
+                                billingResult.getDebugMessage());
+                    } else {
+                        processPurchaseList(list, knownSubscriptionSKUs);
+                    }
+
+                });
+        Log.d(TAG, "Refreshing purchases started.");
     }
 
     /**
@@ -465,8 +472,12 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
             if (null != purchasesList) {
                 for (Purchase purchase : purchasesList) {
                     for (String sku : skus) {
-                        if (purchase.getSku().equals(sku)) {
-                            returnPurchasesList.add(purchase);
+                        for (String purchaseSku : purchase.getSkus()) {
+                            if (purchaseSku.equals(sku)) {
+                                if ( !returnPurchasesList.contains(purchase) ) {
+                                    returnPurchasesList.add(purchase);
+                                }
+                            }
                         }
                     }
                 }
@@ -481,21 +492,24 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
      * BillingDataSource.
      */
     public void consumeInappPurchase(@NonNull String sku) {
-        Purchase.PurchasesResult pr = billingClient.queryPurchases(BillingClient.SkuType.INAPP);
-        BillingResult br = pr.getBillingResult();
-        List<Purchase> purchasesList = pr.getPurchasesList();
-        assert purchasesList != null;
-        if (br.getResponseCode() != BillingClient.BillingResponseCode.OK) {
-            Log.e(TAG, "Problem getting purchases: " + br.getDebugMessage());
-        } else {
-            for (Purchase purchase : purchasesList) {
-                if (purchase.getSku().equals(sku)) {
-                    consumePurchase(purchase);
-                    return;
-                }
-            }
-        }
-        Log.e(TAG, "Unable to consume SKU: " + sku + " Sku not found.");
+        billingClient.queryPurchasesAsync(BillingClient.SkuType.INAPP,
+                (billingResult, list) -> {
+                    assert list != null;
+                    if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                        Log.e(TAG, "Problem getting purchases: " +
+                                billingResult.getDebugMessage());
+                    } else {
+                        for (Purchase purchase : list) {
+                            // for right now any bundle of SKUs must all be consumable
+                            for ( String purchaseSku : purchase.getSkus() )
+                                if (purchaseSku.equals(sku)) {
+                                    consumePurchase(purchase);
+                                    return;
+                                }
+                        }
+                    }
+                    Log.e(TAG, "Unable to consume SKU: " + sku + " Sku not found.");
+                });
     }
 
     /**
@@ -506,28 +520,30 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
      * @param purchase an up-to-date object to set the state for the Sku
      */
     private void setSkuStateFromPurchase(@NonNull Purchase purchase) {
-        String sku = purchase.getSku();
-        MutableLiveData<SkuState> skuStateLiveData = skuStateMap.get(sku);
-        if (null == skuStateLiveData) {
-            Log.e(TAG, "Unknown SKU " + purchase.getSku() + ". Check to make " +
-                    "sure SKU matches SKUS in the Play developer console.");
-        } else {
-            switch (purchase.getPurchaseState()) {
-                case Purchase.PurchaseState.PENDING:
-                    skuStateLiveData.setValue(SkuState.SKU_STATE_PENDING);
-                    break;
-                case Purchase.PurchaseState.UNSPECIFIED_STATE:
-                    skuStateLiveData.setValue(SkuState.SKU_STATE_UNPURCHASED);
-                    break;
-                case Purchase.PurchaseState.PURCHASED:
-                    if (purchase.isAcknowledged()) {
-                        skuStateLiveData.setValue(SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED);
-                    } else {
-                        skuStateLiveData.setValue(SkuState.SKU_STATE_PURCHASED);
-                    }
-                    break;
-                default:
-                    Log.e(TAG, "Purchase in unknown state: " + purchase.getPurchaseState());
+        for (String purchaseSku:purchase.getSkus()) {
+            MutableLiveData<SkuState> skuStateLiveData = skuStateMap.get(purchaseSku);
+            if (null == skuStateLiveData) {
+                Log.e(TAG, "Unknown SKU " + purchaseSku + ". Check to make " +
+                        "sure SKU matches SKUS in the Play developer console.");
+            } else {
+                switch (purchase.getPurchaseState()) {
+                    case Purchase.PurchaseState.PENDING:
+                        skuStateLiveData.postValue(SkuState.SKU_STATE_PENDING);
+                        break;
+                    case Purchase.PurchaseState.UNSPECIFIED_STATE:
+                        skuStateLiveData.postValue(SkuState.SKU_STATE_UNPURCHASED);
+                        break;
+                    case Purchase.PurchaseState.PURCHASED:
+                        if (purchase.isAcknowledged()) {
+                            skuStateLiveData.postValue(
+                                    SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED);
+                        } else {
+                            skuStateLiveData.postValue(SkuState.SKU_STATE_PURCHASED);
+                        }
+                        break;
+                    default:
+                        Log.e(TAG, "Purchase in unknown state: " + purchase.getPurchaseState());
+                }
             }
         }
     }
@@ -545,7 +561,7 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
             Log.e(TAG, "Unknown SKU " + sku + ". Check to make " +
                     "sure SKU matches SKUS in the Play developer console.");
         } else {
-            skuStateLiveData.setValue(newSkuState);
+            skuStateLiveData.postValue(newSkuState);
         }
     }
 
@@ -576,26 +592,40 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
         HashSet<String> updatedSkus = new HashSet<>();
         if (null != purchases) {
             for (final Purchase purchase : purchases) {
-                String sku = purchase.getSku();
-                final MutableLiveData<SkuState> skuStateLiveData = skuStateMap.get(sku);
-                if (null == skuStateLiveData) {
-                    Log.e(TAG, "Unknown SKU " + sku + ". Check to make " +
-                            "sure SKU matches SKUS in the Play developer console.");
-                    continue;
+                for (String sku : purchase.getSkus()) {
+                    final MutableLiveData<SkuState> skuStateLiveData = skuStateMap.get(sku);
+                    if (null == skuStateLiveData) {
+                        Log.e(TAG, "Unknown SKU " + sku + ". Check to make " +
+                                "sure SKU matches SKUS in the Play developer console.");
+                        continue;
+                    }
+                    updatedSkus.add(sku);
                 }
-                updatedSkus.add(sku);
                 // Global check to make sure all purchases are signed correctly.
                 // This check is best performed on your server.
                 int purchaseState = purchase.getPurchaseState();
                 if (purchaseState == Purchase.PurchaseState.PURCHASED) {
                     if (!isSignatureValid(purchase)) {
-                        Log.e(TAG, "Invalid signature on SKU " + sku + ". Check to make " +
+                        Log.e(TAG, "Invalid signature on purchase. Check to make " +
                                 "sure your public key is correct.");
                         continue;
                     }
                     // only set the purchased state after we've validated the signature.
                     setSkuStateFromPurchase(purchase);
-                    if (knownAutoConsumeSKUs.contains(sku)) {
+                    boolean isConsumable = false;
+                    for (String sku : purchase.getSkus()) {
+                        if (knownAutoConsumeSKUs.contains(sku)) {
+                            isConsumable = true;
+                        } else {
+                            if (isConsumable) {
+                                Log.e(TAG, "Purchase cannot contain a mixture of consumable" +
+                                        "and non-consumable items: " + purchase.getSkus().toString());
+                                isConsumable = false;
+                                break;
+                            }
+                        }
+                    }
+                    if ( isConsumable ) {
                         consumePurchase(purchase);
                     } else if (!purchase.isAcknowledged()) {
                         billingClient.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder()
@@ -604,8 +634,10 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
                             if (billingResult.getResponseCode()
                                     == BillingClient.BillingResponseCode.OK) {
                                 // purchase acknowledged
-                                setSkuState(sku, SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED);
-                                newPurchase.setValue(sku);
+                                for ( String sku : purchase.getSkus() ) {
+                                    setSkuState(sku, SkuState.SKU_STATE_PURCHASED_AND_ACKNOWLEDGED);
+                                }
+                                newPurchase.postValue(purchase.getSkus());
                             }
                         });
                     }
@@ -614,7 +646,7 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
                     setSkuStateFromPurchase(purchase);
                 }
             }
-        } else {
+        } else{
             Log.d(TAG, "Empty purchase list.");
         }
         // Clear purchase state of anything that didn't come with this purchase list if this is
@@ -635,25 +667,26 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
      * @param purchase purchase to consume
      */
     private void consumePurchase(@NonNull Purchase purchase) {
-        final String sku = purchase.getSku();
         // weak check to make sure we're not already consuming the sku
-        if (purchaseConsumptionInProcess.contains(sku)) {
+        if (purchaseConsumptionInProcess.contains(purchase)) {
             // already consuming
             return;
         }
-        purchaseConsumptionInProcess.add(sku);
+        purchaseConsumptionInProcess.add(purchase);
         billingClient.consumeAsync(ConsumeParams.newBuilder()
                 .setPurchaseToken(purchase.getPurchaseToken())
                 .build(), (billingResult, s) -> {
             // ConsumeResponseListener
-            purchaseConsumptionInProcess.remove(sku);
+            purchaseConsumptionInProcess.remove(purchase);
             if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                 Log.d(TAG, "Consumption successful. Delivering entitlement.");
-                purchaseConsumed.setValue(sku);
-                // Since we've consumed the purchase
-                setSkuState(sku, SkuState.SKU_STATE_UNPURCHASED);
-                // And this also qualifies as a new purchase
-                newPurchase.setValue(sku);
+                purchaseConsumed.postValue(purchase.getSkus());
+                for (String sku: purchase.getSkus()) {
+                    // Since we've consumed the purchase
+                    setSkuState(sku, SkuState.SKU_STATE_UNPURCHASED);
+                    // And this also qualifies as a new purchase
+                }
+                newPurchase.postValue(purchase.getSkus());
             } else {
                 Log.e(TAG, "Error while consuming: " + billingResult.getDebugMessage());
             }
@@ -669,44 +702,74 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
      * @param activity    active activity to launch our billing flow from
      * @param sku         SKU to be purchased
      * @param upgradeSkus SKUs that the subscription can be upgraded from
-     * @return true if launch is successful
      */
-    public boolean launchBillingFlow(Activity activity, @NonNull String sku,
+    public void launchBillingFlow(Activity activity, @NonNull String sku,
             String... upgradeSkus) {
         LiveData<SkuDetails> skuDetailsLiveData = skuDetailsLiveDataMap.get(sku);
         assert skuDetailsLiveData != null;
         SkuDetails skuDetails = skuDetailsLiveData.getValue();
         if (null != skuDetails) {
-            BillingFlowParams.Builder billingFlowParamsBuilder = BillingFlowParams.newBuilder();
-            billingFlowParamsBuilder.setSkuDetails(skuDetails);
-            if (null != upgradeSkus) {
-                List<Purchase> heldSubscriptions = getPurchases(upgradeSkus,
-                        BillingClient.SkuType.SUBS);
-                switch (heldSubscriptions.size()) {
-                    case 1:  // Upgrade flow!
-                        Purchase purchase = heldSubscriptions.get(0);
-                        billingFlowParamsBuilder.setOldSku(purchase.getSku(),
-                                purchase.getPurchaseToken());
-                        break;
-                    case 0:
-                        break;
-                    default:
-                        Log.e(TAG, heldSubscriptions.size() +
-                                " subscriptions subscribed to. Upgrade not possible.");
-                }
-            }
-            BillingResult br = billingClient.launchBillingFlow(activity,
-                    billingFlowParamsBuilder.build());
-            if (br.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                billingFlowInProcess.postValue(true);
-                return true;
+            if (null != upgradeSkus && upgradeSkus.length > 0) {
+                billingClient.queryPurchasesAsync(BillingClient.SkuType.SUBS,
+                        (br, purchasesList) -> {
+                            List<Purchase> heldSubscriptions = new LinkedList<>();
+                            if (br.getResponseCode() != BillingClient.BillingResponseCode.OK) {
+                                Log.e(TAG, "Problem getting purchases: " + br.getDebugMessage());
+                            } else {
+                                if (null != purchasesList) {
+                                    for (Purchase purchase : purchasesList) {
+                                        for (String upgradeSku : upgradeSkus) {
+                                            for (String purchaseSku : purchase.getSkus()) {
+                                                if (purchaseSku.equals(upgradeSku)) {
+                                                    if ( !heldSubscriptions.contains(purchase) ) {
+                                                        heldSubscriptions.add(purchase);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            BillingFlowParams.Builder billingFlowParamsBuilder = BillingFlowParams.newBuilder();
+                            billingFlowParamsBuilder.setSkuDetails(skuDetails);
+                            switch (heldSubscriptions.size()) {
+                                case 1:  // Upgrade flow!
+                                    Purchase purchase = heldSubscriptions.get(0);
+                                    billingFlowParamsBuilder.setSubscriptionUpdateParams(
+                                            BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                                                    .setOldSkuPurchaseToken(heldSubscriptions.get(0)
+                                                            .getPurchaseToken())
+                                                    .build()
+                                    );
+                                    br = billingClient.launchBillingFlow(activity,
+                                            billingFlowParamsBuilder.build());
+                                    if (br.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                                        billingFlowInProcess.postValue(true);
+                                    } else {
+                                        Log.e(TAG, "Billing failed: + " + br.getDebugMessage());
+                                    }
+                                    break;
+                                case 0:
+                                    break;
+                                default:
+                                    Log.e(TAG, heldSubscriptions.size() +
+                                            " subscriptions subscribed to. Upgrade not possible.");
+                            }
+                        });
             } else {
-                Log.e(TAG, "Billing failed: + " + br.getDebugMessage());
+                BillingFlowParams.Builder billingFlowParamsBuilder = BillingFlowParams.newBuilder();
+                billingFlowParamsBuilder.setSkuDetails(skuDetails);
+                BillingResult br = billingClient.launchBillingFlow(activity,
+                        billingFlowParamsBuilder.build());
+                if (br.getResponseCode() == BillingClient.BillingResponseCode.OK) {
+                    billingFlowInProcess.postValue(true);
+                } else {
+                    Log.e(TAG, "Billing failed: + " + br.getDebugMessage());
+                }
             }
         } else {
             Log.e(TAG, "SkuDetails not found for: " + sku);
         }
-        return false;
     }
 
     /**
@@ -778,8 +841,8 @@ public class BillingDataSource implements LifecycleObserver, PurchasesUpdatedLis
         Boolean billingInProcess = billingFlowInProcess.getValue();
 
         // this just avoids an extra purchase refresh after we finish a billing flow
-        if (null == billingInProcess || !billingInProcess) {
-            refreshPurchases();
+        if (billingSetupComplete && (null == billingInProcess || !billingInProcess)) {
+            refreshPurchasesAsync();
         }
     }
 

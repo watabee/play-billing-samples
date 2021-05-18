@@ -20,6 +20,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.MutableLiveData;
@@ -32,6 +33,7 @@ import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.BillingResult;
 import com.android.billingclient.api.Purchase;
+import com.android.billingclient.api.PurchasesResponseListener;
 import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.SkuDetails;
 import com.android.billingclient.api.SkuDetailsParams;
@@ -46,7 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 public class BillingClientLifecycle implements LifecycleObserver, PurchasesUpdatedListener,
-        BillingClientStateListener, SkuDetailsResponseListener {
+        BillingClientStateListener, SkuDetailsResponseListener, PurchasesResponseListener {
 
     private static final String TAG = "BillingLifecycle";
 
@@ -212,18 +214,16 @@ public class BillingClientLifecycle implements LifecycleObserver, PurchasesUpdat
             Log.e(TAG, "queryPurchases: BillingClient is not ready");
         }
         Log.d(TAG, "queryPurchases: SUBS");
-        Purchase.PurchasesResult result = billingClient.queryPurchases(BillingClient.SkuType.SUBS);
-        if (result == null) {
-            Log.i(TAG, "queryPurchases: null purchase result");
-            processPurchases(null);
-        } else {
-            if (result.getPurchasesList() == null) {
-                Log.i(TAG, "queryPurchases: null purchase list");
-                processPurchases(null);
-            } else {
-                processPurchases(result.getPurchasesList());
-            }
-        }
+        billingClient.queryPurchasesAsync(BillingClient.SkuType.SUBS, this);
+    }
+
+    /**
+     * Callback from the billing library when queryPurchasesAsync is called.
+     */
+    @Override
+    public void onQueryPurchasesResponse(@NonNull BillingResult billingResult,
+            @NonNull List<Purchase> list) {
+        processPurchases(list);
     }
 
     /**
@@ -236,7 +236,7 @@ public class BillingClientLifecycle implements LifecycleObserver, PurchasesUpdat
         }
         int responseCode = billingResult.getResponseCode();
         String debugMessage = billingResult.getDebugMessage();
-        Log.d(TAG, "onPurchasesUpdated: $responseCode $debugMessage");
+        Log.d(TAG, String.format("onPurchasesUpdated: %s %s",responseCode, debugMessage));
         switch (responseCode) {
             case BillingClient.BillingResponseCode.OK:
                 if (purchases == null) {
@@ -338,9 +338,6 @@ public class BillingClientLifecycle implements LifecycleObserver, PurchasesUpdat
      * Launching the UI to make a purchase requires a reference to the Activity.
      */
     public int launchBillingFlow(Activity activity, BillingFlowParams params) {
-        String sku = params.getSku();
-        String oldSku = params.getOldSku();
-        Log.i(TAG, "launchBillingFlow: sku: " + sku + ", oldSku: " + oldSku);
         if (!billingClient.isReady()) {
             Log.e(TAG, "launchBillingFlow: BillingClient is not ready");
         }

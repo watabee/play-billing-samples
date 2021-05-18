@@ -50,17 +50,19 @@ class TrivialDriveRepository(
     private fun postMessagesFromBillingFlow() {
         defaultScope.launch {
             try {
-                billingDataSource.getNewPurchases().collect { sku ->
-                    Log.d(TAG, "Triggered with $sku")
-                    when (sku) {
-                        SKU_GAS -> gameMessages.emit(R.string.message_more_gas_acquired)
-                        SKU_PREMIUM -> gameMessages.emit(R.string.message_premium)
-                        SKU_INFINITE_GAS_MONTHLY,
-                        SKU_INFINITE_GAS_YEARLY -> {
-                            // this makes sure that upgrades/downgrades to subscriptions are
-                            // reflected correctly in our user interface
-                            billingDataSource.refreshPurchases()
-                            gameMessages.emit(R.string.message_subscribed)
+                billingDataSource.getNewPurchases().collect { skuList ->
+                    // TODO: Handle multi-line purchases better
+                    for ( sku in skuList ) {
+                        when (sku) {
+                            SKU_GAS -> gameMessages.emit(R.string.message_more_gas_acquired)
+                            SKU_PREMIUM -> gameMessages.emit(R.string.message_premium)
+                            SKU_INFINITE_GAS_MONTHLY,
+                            SKU_INFINITE_GAS_YEARLY -> {
+                                // this makes sure that upgrades/downgrades to subscriptions are
+                                // reflected correctly in our user interface
+                                billingDataSource.refreshPurchases()
+                                gameMessages.emit(R.string.message_subscribed)
+                            }
                         }
                     }
                 }
@@ -95,13 +97,13 @@ class TrivialDriveRepository(
      * @param activity
      * @param sku
      */
-    fun buySku(activity: Activity, sku: String): Boolean {
+    fun buySku(activity: Activity, sku: String) {
         var oldSku: String? = null
         when (sku) {
             SKU_INFINITE_GAS_MONTHLY -> oldSku = SKU_INFINITE_GAS_YEARLY
             SKU_INFINITE_GAS_YEARLY -> oldSku = SKU_INFINITE_GAS_MONTHLY
         }
-        return if (oldSku == null) {
+        if (oldSku == null) {
             billingDataSource.launchBillingFlow(activity, sku)
         } else {
             billingDataSource.launchBillingFlow(activity, sku, oldSku)
@@ -164,7 +166,7 @@ class TrivialDriveRepository(
         }
     }
 
-    fun refreshPurchases() {
+    suspend fun refreshPurchases() {
         billingDataSource.refreshPurchases()
     }
 
@@ -231,8 +233,10 @@ class TrivialDriveRepository(
         // consumed purchases from the billing data source while the app process is alive.
         defaultScope.launch {
             billingDataSource.getConsumedPurchases().collect {
-                if (it == SKU_GAS) {
-                    gameStateModel.incrementGas(GAS_TANK_MAX)
+                for( sku in it ) {
+                    if (sku == SKU_GAS) {
+                        gameStateModel.incrementGas(GAS_TANK_MAX)
+                    }
                 }
             }
         }
