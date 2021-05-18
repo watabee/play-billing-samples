@@ -21,6 +21,8 @@ For more information about Google Play Billing, see the documentation.
 
 # CHANGELOG
 
+* **2021-05-18**
+  * Updated all samples for Google Play Billing Library v4.
 * **2021-04-28**
   * Publish `TrivialDriveJava` : Billing Library Java sample for purchases.
   * Rewrite `TrivialDriveKotlin` : Billing Library Java/Kotlin hybrid sample for purchases, now supports billing ktx/coroutines.
