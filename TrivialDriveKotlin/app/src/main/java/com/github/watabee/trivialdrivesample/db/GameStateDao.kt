@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.sample.android.trivialdrivesample.db
+package com.github.watabee.trivialdrivesample.db
 
 import androidx.room.Dao
 import androidx.room.Query

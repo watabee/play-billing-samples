@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.sample.android.trivialdrivesample.ui;
+package com.github.watabee.trivialdrivesample.ui;
 
 import android.content.res.TypedArray;
 import android.os.Bundle;
@@ -28,10 +28,10 @@ import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
 
-import com.sample.android.trivialdrivesample.GameViewModel;
-import com.sample.android.trivialdrivesample.R;
-import com.sample.android.trivialdrivesample.TrivialDriveApplication;
-import com.sample.android.trivialdrivesample.databinding.FragmentGameBinding;
+import com.github.watabee.trivialdrivesample.GameViewModel;
+import com.github.watabee.trivialdrivesample.R;
+import com.github.watabee.trivialdrivesample.TrivialDriveApplication;
+import com.github.watabee.trivialdrivesample.databinding.FragmentGameBinding;
 
 /**
  * This Fragment represents the game world, but it really just exists to bind the variables used
